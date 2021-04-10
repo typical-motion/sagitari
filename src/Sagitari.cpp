@@ -53,8 +53,8 @@ Sagitari& Sagitari::operator<< (const cv::Mat& input) {
 					cv::circle(tmp, targetAt, 5, cv::Scalar(0, 255, 0));
 					device->targetTo(targetAt.x, targetAt.y);
 				}
-				 else {
-				  this->state = Sagitari::State::SEARCHING;
+				else {
+					this->state = Sagitari::State::SEARCHING;
 				}
 			})
 			cv::imshow("Tracking", tmp);

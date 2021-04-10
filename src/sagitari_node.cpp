@@ -1,17 +1,23 @@
 #include "Sagitari.h"
-int main()
+#include <ros/ros.h>
+int main(int argc, char *argv[])
 {
+	ros::init(argc, argv, "sagitari_node");
+	ros::NodeHandle nh;//开进程
+	ros::Rate rate(150);
 
 	DeviceProvider *device;
 #ifdef DEBUG
 	device = new IODeviceProvider();
 #else
-	device = new ROSDeviceProvider(); -
+	device = new ROSDeviceProvider();
 #endif
 		Sagitari sagitari(IdentityColor::IDENTITY_BLUE, device);
 
 	cv::Mat target;
-	while (1) {
+	while (ros::ok()) {
+		ros::spinOnce();
+        rate.sleep();
 		*device >> target;
 		sagitari << target;
 		int key = cv::waitKey(1);
