@@ -2,7 +2,12 @@
 #include <opencv2/opencv.hpp>
 #include "imgproc.h"
 static double lw_rate(const cv::RotatedRect& rect) {
-    return 1 / adjustRotatedRect(rect).size.aspectRatio();
+#if CV_VERSION_MAJOR == 3
+		return rect.size.height / rect.size.width;
+#elif CV_VERSION_MAJOR == 4
+		return 1 / adjustRotatedRect(rect).size.aspectRatio();
+#endif
+    
 }
 static IdentityColor get_blob_color(const cv::Mat& src, const cv::RotatedRect& blobPos) {
     auto region = blobPos.boundingRect();
@@ -26,11 +31,11 @@ static IdentityColor get_blob_color(const cv::Mat& src, const cv::RotatedRect& b
         return IdentityColor::IDENTITY_RED;
     }
 }
-// 轮廓面积和其最小外接矩形面积之比
+// 锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟叫★拷锟接撅拷锟斤拷锟斤拷锟街拷锟�
 static double areaRatio(const std::vector<cv::Point>& contour, const cv::RotatedRect& rect) {
     return cv::contourArea(contour) / rect.size.area();
 }
-// 判断轮廓是否为一个灯条
+// 锟叫讹拷锟斤拷锟斤拷锟角凤拷为一锟斤拷锟斤拷锟斤拷
 static bool isValidLightBlob(const std::vector<cv::Point>& contour, const cv::RotatedRect& rect) {
     return (1.0 < lw_rate(rect) && lw_rate(rect) < 10) &&
         //           (rect.size.area() < 3000) &&
@@ -45,7 +50,7 @@ Lightbars Sagitari::findLightbars(const cv::Mat& src) {
     Lightbars light_blobs;
 	cv::Mat color_channel;
 	cv::Mat src_bin_light, src_bin_dim;
-	std::vector<cv::Mat> channels;       // 通道拆分
+	std::vector<cv::Mat> channels;       // 通锟斤拷锟斤拷锟�
     cv::split(src, channels);               
     if (this->targetColor == IdentityColor::IDENTITY_BLUE) {
         color_channel = channels[0];        
@@ -53,7 +58,7 @@ Lightbars Sagitari::findLightbars(const cv::Mat& src) {
     else if (this->targetColor == IdentityColor::IDENTITY_RED) {
         color_channel = channels[2];        
     }
-
+    
     int light_threshold;
     if (this->targetColor == IdentityColor::IDENTITY_BLUE) {
         light_threshold = 225;
@@ -61,82 +66,84 @@ Lightbars Sagitari::findLightbars(const cv::Mat& src) {
     else {
         light_threshold = 200;
     }
-    cv::threshold(color_channel, src_bin_light, light_threshold, 255, cv::THRESH_BINARY); // 二值化对应通道
-    cv::threshold(color_channel, src_bin_dim, 140, 255, cv::THRESH_BINARY); // 二值化对应通道
-    
-    
-    static cv::Mat morphKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(3, 5));
-    cv::morphologyEx(src_bin_light, src_bin_light, cv::MORPH_CLOSE, morphKernel);
-    cv::morphologyEx(src_bin_light, src_bin_light, cv::MORPH_OPEN, morphKernel);
-    cv::morphologyEx(src_bin_dim, src_bin_dim, cv::MORPH_CLOSE, morphKernel);
-    cv::morphologyEx(src_bin_dim, src_bin_dim, cv::MORPH_OPEN, morphKernel);
+    cv::threshold(color_channel, src_bin_light, light_threshold, 255, cv::THRESH_BINARY); // 锟斤拷值锟斤拷锟斤拷应通锟斤拷
+    cv::threshold(color_channel, src_bin_dim, 140, 255, cv::THRESH_BINARY); // 锟斤拷值锟斤拷锟斤拷应通锟斤拷
+    SAG_TIMING("Process open-close calcuation", {
+        static cv::Mat morphKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(3, 5));
+        cv::morphologyEx(src_bin_light, src_bin_light, cv::MORPH_CLOSE, morphKernel);
+        cv::morphologyEx(src_bin_light, src_bin_light, cv::MORPH_OPEN, morphKernel);
+        cv::morphologyEx(src_bin_dim, src_bin_dim, cv::MORPH_CLOSE, morphKernel);
+        cv::morphologyEx(src_bin_dim, src_bin_dim, cv::MORPH_OPEN, morphKernel);
+    })
 
-    if (src_bin_light.empty()) return light_blobs;                             // 开闭运算
+    if (src_bin_light.empty()) return light_blobs;                             // 锟斤拷锟斤拷锟斤拷锟斤拷
     if (src_bin_dim.empty()) return light_blobs;
 
-    if (src_bin_light.size() == cv::Size(640, 480) && true) {
+    if (src_bin_light.size() == cv::Size(640, 480) && false) {
         imshow("bin_light", src_bin_light);
         imshow("bin_dim", src_bin_dim);
     }
-    // 使用两个不同的二值化阈值同时进行灯条提取，减少环境光照对二值化这个操作的影响。
-    // 同时剔除重复的灯条，剔除冗余计算，即对两次找出来的灯条取交集。
+    // 使锟斤拷锟斤拷锟斤拷锟斤拷同锟侥讹拷值锟斤拷锟斤拷值同时锟斤拷锟叫碉拷锟斤拷锟斤拷取锟斤拷锟斤拷锟劫伙拷锟斤拷锟斤拷锟秸对讹拷值锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟接帮拷臁�
+    // 同时锟睫筹拷锟截革拷锟侥碉拷锟斤拷锟斤拷锟睫筹拷锟斤拷锟斤拷锟斤拷悖拷锟斤拷锟斤拷锟斤拷锟斤拷页锟斤拷锟斤拷牡锟斤拷锟饺★拷锟斤拷锟斤拷锟�
     std::vector<std::vector<cv::Point>> light_contours_light, light_contours_dim;
     Lightbars light_blobs_light, light_blobs_dim;
     std::vector<cv::Vec4i> hierarchy_light, hierarchy_dim;
     cv::findContours(src_bin_light, light_contours_light, hierarchy_light, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
     cv::findContours(src_bin_dim, light_contours_dim, hierarchy_dim, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-    for (int i = 0; i < light_contours_light.size(); i++) {
-        if (hierarchy_light[i][2] == -1) {
-            cv::RotatedRect rect = cv::minAreaRect(light_contours_light[i]);
-            rect = adjustRotatedRect(rect);
-            if (isValidLightBlob(light_contours_light[i], rect)) {
-                light_blobs_light.emplace_back(
-                    rect, get_blob_color(src, rect)
-                );
-            }
-        }
-    }
-
-    for (int i = 0; i < light_contours_dim.size(); i++) {
-        if (hierarchy_dim[i][2] == -1) {
-            cv::RotatedRect rect = cv::minAreaRect(light_contours_dim[i]);
-            if (isValidLightBlob(light_contours_dim[i], rect)) {
-                light_blobs_dim.emplace_back(
-                    rect, get_blob_color(src, rect)
-                );
-            }
-        }
-    }
-    std ::vector<int> light_to_remove, dim_to_remove;
-    for (int l = 0; l != light_blobs_light.size(); l++) {
-        for (int d = 0; d != light_blobs_dim.size(); d++) {
-            if (isSameBlob(light_blobs_light[l], light_blobs_dim[d])) {
-                if (light_blobs_light[l].rect.size.aspectRatio() > light_blobs_dim[d].rect.size.aspectRatio()) {
-                    dim_to_remove.emplace_back(d);
+    SAG_TIMING("Process light contours", {
+        for (int i = 0; i < light_contours_light.size(); i++) {
+                if (hierarchy_light[i][2] == -1) {
+                    cv::RotatedRect rect = adjustRotatedRect(cv::minAreaRect(light_contours_light[i]));
+                    if (isValidLightBlob(light_contours_light[i], rect)) {
+                        light_blobs_light.emplace_back(
+                            rect, get_blob_color(src, rect)
+                        );
+                    }
                 }
-                else {
-                    light_to_remove.emplace_back(l);
+        }
+    })
+    
+    SAG_TIMING("Process dim contours", {
+        for (int i = 0; i < light_contours_dim.size(); i++) {
+            if (hierarchy_dim[i][2] == -1) {
+                cv::RotatedRect rect = adjustRotatedRect(cv::minAreaRect(light_contours_dim[i]));
+                if (isValidLightBlob(light_contours_dim[i], rect)) {
+                    light_blobs_dim.emplace_back(
+                        rect, get_blob_color(src, rect)
+                    );
                 }
             }
         }
-    }
-    sort(light_to_remove.begin(), light_to_remove.end(), [](int a, int b) { return a > b; });
-    sort(dim_to_remove.begin(), dim_to_remove.end(), [](int a, int b) { return a > b; });
-    for (auto x : light_to_remove) {
-        light_blobs_light.erase(light_blobs_light.begin() + x);
-    }
-    for (auto x : dim_to_remove) {
-        light_blobs_dim.erase(light_blobs_dim.begin() + x);
-    }
-    for (const auto& light : light_blobs_light) {
-        light_blobs.emplace_back(light);
-    }
-
-
-
-    for (const auto& dim : light_blobs_dim) {
-        light_blobs.emplace_back(dim);
-    }
+    })
+    SAG_TIMING("Remove duplicated contours", {
+        std ::vector<int> light_to_remove, dim_to_remove;
+        for (int l = 0; l != light_blobs_light.size(); l++) {
+            for (int d = 0; d != light_blobs_dim.size(); d++) {
+                if (isSameBlob(light_blobs_light[l], light_blobs_dim[d])) {
+                    if (light_blobs_light[l].aspectRatio > light_blobs_dim[d].aspectRatio) {
+                        dim_to_remove.emplace_back(d);
+                    }
+                    else {
+                        light_to_remove.emplace_back(l);
+                    }
+                }
+            }
+        }
+        sort(light_to_remove.begin(), light_to_remove.end(), [](int a, int b) { return a > b; });
+        sort(dim_to_remove.begin(), dim_to_remove.end(), [](int a, int b) { return a > b; });
+        for (auto x : light_to_remove) {
+            light_blobs_light.erase(light_blobs_light.begin() + x);
+        }
+        for (auto x : dim_to_remove) {
+            light_blobs_dim.erase(light_blobs_dim.begin() + x);
+        }
+        for (const auto& light : light_blobs_light) {
+            light_blobs.emplace_back(light);
+        }
+        for (const auto& dim : light_blobs_dim) {
+            light_blobs.emplace_back(dim);
+        }
+    })
     return light_blobs;
 }

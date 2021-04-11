@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0.2)
 project(sagitari)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++11 -O3)
+add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -137,9 +137,9 @@ add_executable(${PROJECT_NAME}_node
     "src/Sagitari.cpp"
     "src/findLightBlobs.cpp"
     "src/imgutils.cpp"
-    "src/matchArmorBox.cpp"
     "src/Lightbar.cpp"
     "src/ArmorBox.cpp"
+    "src/getDistance.cpp"
     "src/findArmorBox.cpp"
     "src/logging.cpp"
     "src/getArmorBox.cpp"

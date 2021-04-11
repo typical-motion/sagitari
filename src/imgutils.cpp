@@ -1,6 +1,8 @@
 ﻿#include "imgproc.h"
-
+#include <vector>
+#include <iostream>
 void drawRotatedRect(const cv::RotatedRect& rect, const cv::Mat& out, const cv::Scalar& color) {
+#if CV_VERSION_MAJOR == 4
 	cv::Point2f vertices2f[4];
 	cv::Point vertices[4];
 	rect.points(vertices2f);
@@ -8,9 +10,22 @@ void drawRotatedRect(const cv::RotatedRect& rect, const cv::Mat& out, const cv::
 		vertices[i] = vertices2f[i];
 	}
 	cv::fillConvexPoly(out, vertices, 4, color);
+#elif CV_VERSION_MAJOR == 3
+	cv::Point2f vertices2f[4];
+	rect.points(vertices2f);
+	std::vector<cv::Point> vecties;
+	for (int i = 0; i < 4; ++i) {
+		vecties.push_back(vertices2f[i]);
+	}
+	cv::fillConvexPoly(out, vecties, color);
+#endif
 }
 cv::RotatedRect adjustRotatedRect(const cv::RotatedRect& rect) {
+#if CV_VERSION_MAJOR == 4
 	if (rect.angle > 45 && rect.angle <= 90) {
+#elif CV_VERSION_MAJOR == 3
+	if (rect.angle >= -90 && rect.angle < -45) {
+#endif		
 		cv::Point2f points[4];
 		rect.points(points);
 		return cv::RotatedRect(rect.center, cv::Size(rect.size.height, rect.size.width), 90 - rect.angle);
@@ -23,13 +38,21 @@ cv::RotatedRect adjustRotatedRect(const cv::RotatedRect& rect) {
 float calcAspectRatio(const cv::RotatedRect& rect) {
 	// https://stackoverflow.com/questions/22696539/reorder-four-points-of-a-rectangle-to-the-correct-order
 	if ((-45 < rect.angle && rect.angle < 45) && (rect.size.height > rect.size.width)) {
+#if CV_VERSION_MAJOR == 3
+		return rect.size.width / rect.size.height;
+#elif CV_VERSION_MAJOR == 4
 		return rect.size.aspectRatio();
+#endif
 	}
 	else {
 		// Correct order:
 		// 0,      1,      2,      3
 		// pts[0], pts[3], pts[2], pts[1]
+#if CV_VERSION_MAJOR == 3
+		return rect.size.width / rect.size.height;
+#elif CV_VERSION_MAJOR == 4
 		return rect.size.aspectRatio();
+#endif
 	}
 }
 

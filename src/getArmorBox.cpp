@@ -1,6 +1,6 @@
 #include "Sagitari.h"
-
-bool Sagitari::getArmorBox(const cv::Mat& roi, ArmorBox*& armorBox) {
+/*
+bool Sagitari::getArmorBox(cv::Mat& roi, ArmorBox*& armorBox) {
 	cv::imshow("Refind Target", roi);
 	Lightbars lightbars = this->findLightbars(roi);
 	std::vector<ArmorBox> boxes = this->matchArmorBoxes(roi, lightbars);
@@ -9,3 +9,4 @@ bool Sagitari::getArmorBox(const cv::Mat& roi, ArmorBox*& armorBox) {
 	armorBox = &boxes.at(0);
 	return true;
 }
+*/

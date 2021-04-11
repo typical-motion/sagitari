@@ -14,6 +14,7 @@
 	public :
 		cv::RotatedRect rect;
 		cv::Rect boundingRect;
+		float aspectRatio;
 		IdentityColor color;
 		double length;          //灯条长度
 		/**
@@ -48,12 +49,18 @@
 		Type type;
 		cv::Mat roi;
 		ArmorBox(const cv::RotatedRect&, const IdentityColor&, const std::pair<Lightbar, Lightbar>&);
+		/**
+		 * 调整 x, y 的偏移量
+		 **/
+		void relocateROI(float x, float y);
 	};
+	/**
+	 * 设备接口
+	 **/
 	class DeviceProvider {
 	public:
-		void targetTo(float x, float y) {};
+		virtual void targetTo(float x, float y) = 0;
 		
-
 		DeviceProvider& operator>>(cv::Mat& mat) {
 			input(mat);
 			return *this;
@@ -66,27 +73,33 @@
 		enum class State {
 			SEARCHING, TRACKING
 		};
-		Sagitari(IdentityColor, DeviceProvider*&) {}
-		Sagitari& operator <<(const cv::Mat&);
+		Sagitari(IdentityColor, DeviceProvider*);
+		Sagitari& operator <<(cv::Mat&);
+		DeviceProvider *device = nullptr;
 		/**
 		* 获取一个ROI中的装甲板位置
 		* @param roi ROI
 		* @param armorBox 输出匹配到的装甲板
 		* @return 如果成功，返回true。
 		*/
-		bool getArmorBox(const cv::Mat& roi, ArmorBox*& armorBox);
+		// bool getArmorBox(cv::Mat& roi, ArmorBox*& armorBox);
 	private:
-		DeviceProvider *device;
 		IdentityColor targetColor;				// 目标颜色
 		State state;							// 射手状态
 		cv::Ptr<cv::Tracker> tracker;			// 追踪器
 		
 		Lightbars findLightbars(const cv::Mat&);					// 寻找灯条
-		std::vector<ArmorBox> matchArmorBoxes(const cv::Mat& mat, const Lightbars& lightbars);
-		std::vector<ArmorBox> findArmorBoxes(const cv::Mat& mat, const std::vector<ArmorBox>& armorboxes);
+		std::vector<ArmorBox> findArmorBoxes(cv::Mat& mat, const Lightbars& lightbars);
 		bool findArmorBox();					// 寻找装甲板
 
 		void initializeTracker(const cv::Mat& src, const cv::Rect& roi); // 初始化追踪器
+
+		/**
+		 * 测距
+		 * @param rect 目标位置
+		 * @return 距离
+		 **/
+		double getDistance(cv::RotatedRect& rect);
 		
 	};
 	class IODeviceProvider : public DeviceProvider {
@@ -102,10 +115,11 @@
 	};
 	class ROSDeviceProvider : public DeviceProvider {
 	public:
-		ROSDeviceProvider();
+		ROSDeviceProvider(Sagitari*);
 		~ROSDeviceProvider();
 		void targetTo(float x, float y);
 	private:
 		void input(cv::Mat&);
+		Sagitari* sagitari;
 
 	};

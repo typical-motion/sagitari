@@ -17,7 +17,7 @@ do { \
 	__VA_ARGS__; \
 	std::stringstream str; \
 	str << " - Timing: " << TAG << " elapsed time:" << std::to_string((cv::getTickCount() - __timer_startAt) / cv::getTickFrequency()) << "s."; \
-	Logger::log(Logger::L_DEBUG, str.str()); \
+	Logger::log(Logger::Tag::L_DEBUG, str.str()); \
 } while(0);
 namespace Logger {
 	enum class Tag {
@@ -27,7 +27,7 @@ namespace Logger {
 		L_DEBUG,
 	};
 	void log(const Tag& tag, const std::stringstream& txt);
-	void log(const Tag& tag, const std::string& txt);
+	void log(const Tag& tag, const std::string& txt); 
 	void log(const Tag& tag, const std::stringstream& txt, const cv::Mat& mat, int offset = 0);
 	void log(const Tag& tag, const std::string& txt, const cv::Mat& mat, int offset = 0);
 }
