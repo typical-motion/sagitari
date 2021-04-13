@@ -1,38 +1,38 @@
 //
 // Created by lss23 on 2021/4/3.
-// ÔÛÃÇ¾¡Á¿ÈÃ magic number µÄÓ°ÏìÐ¡Ò»Ð©¡£
+// ï¿½ï¿½ï¿½Ç¾ï¿½ï¿½ï¿½ï¿½ï¿½ magic number ï¿½ï¿½Ó°ï¿½ï¿½Ð¡Ò»Ð©ï¿½ï¿½
 //
 #pragma once
-#define DEBUG 5 // µ÷ÊÔÄ£Ê½µÈ¼¶¡£Ô½¸ß»°Ô½¶à
+#define DEBUG 5 // ï¿½ï¿½ï¿½ï¿½Ä£Ê½ï¿½È¼ï¿½ï¿½ï¿½Ô½ï¿½ß»ï¿½Ô½ï¿½ï¿½
 #define ENEMY_BLUE 1
 #define ENEMY_RED 2
-const int ENEMY_COLOR = ENEMY_BLUE; // µÐ·½ÑÕÉ«
+const int ENEMY_COLOR = ENEMY_BLUE; // ï¿½Ð·ï¿½ï¿½ï¿½É«
 /**
-  * Í¼Æ¬Ô¤´¦Àí
+  * Í¼Æ¬Ô¤ï¿½ï¿½ï¿½ï¿½
   */
-const int PREPROCESS_COLOR_CHANNEL = 2;	// ±£ÁôÑÕÉ«Í¨µÀ
-const int PREPROCESS_THRESHOLD = 200;	// ÅòÕÍãÐÖµ
+const int PREPROCESS_COLOR_CHANNEL = 2;	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É«Í¨ï¿½ï¿½
+const int PREPROCESS_THRESHOLD = 200;	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
 /**
- * ±ßÔµ¼ì²â
+ * ï¿½ï¿½Ôµï¿½ï¿½ï¿½
  */
-const int CONTOUR_AREA_PREFERED = 0;	// ±ßÔµÃæ»ý
-const float CONTOUR_RATIO_PREFERED = 1.5;	// ±ßÔµ³¤¿í±È
+const int CONTOUR_AREA_PREFERED = 0;	// ï¿½ï¿½Ôµï¿½ï¿½ï¿½
+const float CONTOUR_RATIO_PREFERED = 1.5;	// ï¿½ï¿½Ôµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 /**
- * µÆÌõ
+ * ï¿½ï¿½ï¿½ï¿½
  */
-const float RECTS_ANGLES_TRESHOLD = 5;		// Ò»¶ÔµÆÌõÖ®¼äµÄ½Ç¶È²îãÐÖµ
-const float RECTS_CENTER_Y_TRESHOLD = 10;   // Ò»¶ÔµÆÌõÖÐÐÄµãYÖá²îÖµ
-const float BARLINE_ANGLE_TRESHOLD = 3;    // Ò»¶ÔµÆÌõÖ®¼äµÄÆ½ÐÐÖ±ÏßÓëµÆÌõ±¾ÉíÐÎ³ÉµÄ½Ç¶ÈãÐÖµ£¬ÀíÂÛÉÏÓ¦¸ÃÊÇ 90¡ã
+const float RECTS_ANGLES_TRESHOLD = 5;		// Ò»ï¿½Ôµï¿½ï¿½ï¿½Ö®ï¿½ï¿½Ä½Ç¶È²ï¿½ï¿½ï¿½Öµ
+const float RECTS_CENTER_Y_TRESHOLD = 10;   // Ò»ï¿½Ôµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Äµï¿½Yï¿½ï¿½ï¿½Öµ
+const float BARLINE_ANGLE_TRESHOLD = 3;    // Ò»ï¿½Ôµï¿½ï¿½ï¿½Ö®ï¿½ï¿½ï¿½Æ½ï¿½ï¿½Ö±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î³ÉµÄ½Ç¶ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½ 90ï¿½ï¿½
 /**
-*	×°¼×°å±ÈÀýµÄÉÏÏÞÓëÏÂÏÞ
+*	×°ï¿½×°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 */
-const float RECTS_RATIO_ARMORBOX_SMALL_LEAST = 0.7;
+const float RECTS_RATIO_ARMORBOX_SMALL_LEAST = 0.65;
 const float RECTS_RATIO_ARMORBOX_SMALL_MOST = 1.2;
 const float RECTS_RATIO_ARMORBOX_BIG_LEAST = 0.7;
 const float RECTS_RATIO_ARMORBOX_BIG_MOST = 1.2;
 
 /**
-* ×°¼×°åÄ£°åÆ¥ÅäÏàËÆ¶È
+* ×°ï¿½×°ï¿½Ä£ï¿½ï¿½Æ¥ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½
 */
-const float ARMORBOX_TEMPLATE_SIMILARITY = 0.6; // ÅÅ³ýÏàËÆ¶ÈµÍÓÚ´ËÖµ
+const float ARMORBOX_TEMPLATE_SIMILARITY = 0.6; // ï¿½Å³ï¿½ï¿½ï¿½ï¿½Æ¶Èµï¿½ï¿½Ú´ï¿½Öµ

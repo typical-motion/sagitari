@@ -2,6 +2,7 @@
 	// or project specific include files.
 
 	#pragma once
+	#include <ros/ros.h>
 	#include <opencv2/opencv.hpp>
     #include <opencv2/tracking.hpp>
 
@@ -37,17 +38,19 @@
 			NUMBER_5,
 			NUMBER_6,
 			NUMBER_7,
+			NUMBER_8,
 			CHARACTER_ARMOR,
 			CHARACTER_HERO,
 			CHARACTER_DRONE,
 			UNKNOW
 		};
-		cv::RotatedRect rect;
+		cv::RotatedRect rect, roiCardRect;
 		cv::Rect boundingRect;
 		std::pair<Lightbar, Lightbar> lightbars;
 		IdentityColor color;
 		Type type;
-		cv::Mat roi;
+		cv::Mat roi, roiCard;
+		cv::Point2f numVertices[4];
 		ArmorBox(const cv::RotatedRect&, const IdentityColor&, const std::pair<Lightbar, Lightbar>&);
 		/**
 		 * 调整 x, y 的偏移量
@@ -59,7 +62,7 @@
 	 **/
 	class DeviceProvider {
 	public:
-		virtual void targetTo(float x, float y) = 0;
+		virtual void targetTo(double yaw, double pitch, double targe_armor_distance) = 0;
 		
 		DeviceProvider& operator>>(cv::Mat& mat) {
 			input(mat);
@@ -99,14 +102,24 @@
 		 * @param rect 目标位置
 		 * @return 距离
 		 **/
-		double getDistance(cv::RotatedRect& rect);
+		double getDistance(ArmorBox box);
+
+		std::vector<double> getAngle(const cv::Point& point);
+		std::vector<double> getAngle_(const cv::Point& prevPoint, const cv::Point& currentPoint, double focus);
+
+		void aimAndFire(const cv::Point& point);
+		
+		double targe_armor_distance;
+		double im_real_weights = 0;
+		double real_distance_height = 0.06;
+
 		
 	};
 	class IODeviceProvider : public DeviceProvider {
 	public:
 		IODeviceProvider();
 		~IODeviceProvider();
-		void targetTo(float x, float y);
+		void targetTo(double yaw, double pitch, double targe_armor_distance);
 	private:
 		cv::VideoCapture capture;
 		cv::VideoWriter video;
@@ -117,9 +130,10 @@
 	public:
 		ROSDeviceProvider(Sagitari*);
 		~ROSDeviceProvider();
-		void targetTo(float x, float y);
+		void targetTo(double yaw, double pitch, double targe_armor_distance);
 	private:
 		void input(cv::Mat&);
+		ros::Publisher pub;
 		Sagitari* sagitari;
 
 	};

@@ -139,6 +139,7 @@ add_executable(${PROJECT_NAME}_node
     "src/imgutils.cpp"
     "src/Lightbar.cpp"
     "src/ArmorBox.cpp"
+    "src/getAngle.cpp"
     "src/getDistance.cpp"
     "src/findArmorBox.cpp"
     "src/logging.cpp"

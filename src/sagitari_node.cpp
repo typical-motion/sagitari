@@ -3,7 +3,7 @@
 #include <opencv2/core/utility.hpp>
 int main(int argc, char *argv[])
 {
-	ros::init(argc, argv, "sagitari_node");
+	ros::init(argc, argv, "sagitari");
 
 	const cv::String keys =
 		"{help h usage ? |      | print this message   }"
@@ -16,12 +16,13 @@ int main(int argc, char *argv[])
 		parser.printMessage();
 		return 0;
 	}
-	Sagitari sagitari(IdentityColor::IDENTITY_BLUE, device);
+	Sagitari sagitari(IdentityColor::IDENTITY_RED, device);
 	if (parser.get<int>("usecam"))
 	{
 		device = new ROSDeviceProvider(&sagitari);
 		sagitari.device = device;
 		std::cout<< "Hey I'm here" << std::endl;
+
 	}
 	else
 	{

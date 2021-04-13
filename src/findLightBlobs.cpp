@@ -18,12 +18,23 @@ static IdentityColor get_blob_color(const cv::Mat& src, const cv::RotatedRect& b
     region &= cv::Rect(0, 0, src.cols, src.rows);
     cv::Mat roi = src(region);
     int red_cnt = 0, blue_cnt = 0;
+    /*
     for (int row = 0; row < roi.rows; row++) {
         for (int col = 0; col < roi.cols; col++) {
             red_cnt += roi.at<cv::Vec3b>(row, col)[2];
             blue_cnt += roi.at<cv::Vec3b>(row, col)[0];
         }
     }
+    */
+    std::vector<cv::Mat> channels;       // ͨ����ￄ1�7
+    cv::split(roi, channels); 
+    red_cnt = cv::countNonZero(channels.at(2) - channels.at(1)), blue_cnt = cv::countNonZero(channels.at(0) - channels.at(1));
+    // std::cout << "red_cnt: " << red_cnt << "" << " " << cv::countNonZero(channels.at(2) - channels.at(1)) <<std::endl;
+    // std::cout << "blue_cnt: " << blue_cnt  << "" << " " << cv::countNonZero(channels.at(0) - channels.at(1)) << std::endl;
+    // cv::imshow("red_cnt", channels.at(2) - channels.at(1));
+    // cv::imshow("blue_cnt", channels.at(0) - channels.at(1));
+    // cv::waitKey(1);
+
     if (red_cnt > blue_cnt) {
         return IdentityColor::IDENTITY_RED;
     }
@@ -31,7 +42,7 @@ static IdentityColor get_blob_color(const cv::Mat& src, const cv::RotatedRect& b
         return IdentityColor::IDENTITY_RED;
     }
 }
-// �������������С��Ӿ������֮�ￄ1�7
+// �������������С��Ӿ������֮�ￄ1�7
 static double areaRatio(const std::vector<cv::Point>& contour, const cv::RotatedRect& rect) {
     return cv::contourArea(contour) / rect.size.area();
 }
@@ -50,7 +61,7 @@ Lightbars Sagitari::findLightbars(const cv::Mat& src) {
     Lightbars light_blobs;
 	cv::Mat color_channel;
 	cv::Mat src_bin_light, src_bin_dim;
-	std::vector<cv::Mat> channels;       // ͨ����ￄ1�7
+	std::vector<cv::Mat> channels;       // ͨ����ￄ1�7
     cv::split(src, channels);               
     if (this->targetColor == IdentityColor::IDENTITY_BLUE) {
         color_channel = channels[0];        
@@ -83,8 +94,8 @@ Lightbars Sagitari::findLightbars(const cv::Mat& src) {
         imshow("bin_light", src_bin_light);
         imshow("bin_dim", src_bin_dim);
     }
-    // ʹ��������ͬ�Ķ�ֵ����ֵͬʱ���е�����ȡ�����ٻ������նԶ�ֵ�����������Ӱ�졄1�7
-    // ͬʱ�޳��ظ��ĵ������޳�������㣬���������ҳ����ĵ���ȡ�����ￄ1�7
+    // ʹ��������ͬ�Ķ�ֵ����ֵͬʱ���е�����ȡ�����ٻ������նԶ�ֵ�����������Ӱ�졄1�7
+    // ͬʱ�޳��ظ��ĵ������޳�������㣬���������ҳ����ĵ���ȡ�����ￄ1�7
     std::vector<std::vector<cv::Point>> light_contours_light, light_contours_dim;
     Lightbars light_blobs_light, light_blobs_dim;
     std::vector<cv::Vec4i> hierarchy_light, hierarchy_dim;

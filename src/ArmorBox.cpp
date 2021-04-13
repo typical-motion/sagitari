@@ -3,10 +3,10 @@
 ArmorBox::ArmorBox(const cv::RotatedRect& rct, const IdentityColor& clr, const std::pair<Lightbar, Lightbar>& lbs) : rect(rct), color(clr), lightbars(lbs) {
 	boundingRect = rct.boundingRect();
 	type = ArmorBox::Type::UNKNOW;
-	boundingRect.x-=5;
-	boundingRect.y-=5;
-	boundingRect.width+=10;
-	boundingRect.height+=10;
+	boundingRect.x-=2;
+	boundingRect.y-=2;
+	boundingRect.width+=4;
+	boundingRect.height+=4;
 }
 
 void ArmorBox::relocateROI(float x, float y) {
