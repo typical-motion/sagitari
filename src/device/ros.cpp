@@ -25,7 +25,6 @@ void RM2020_armor_detector_callback(const sensor_msgs::ImageConstPtr &thr_img, c
     cv_bridge::CvImagePtr cv_ptr_src;
     cv_ptr_src = cv_bridge::toCvCopy(srceen, "bgr8");
     cv_ptr_src->image.copyTo(src_img);
-    std::cout << "I fucking get it" << std::endl;
 }
 void subCallback_mod(const uart_process_2::uart_receive _data)
 {
@@ -77,10 +76,10 @@ void ROSDeviceProvider::input(cv::Mat &mat)
 void ROSDeviceProvider::targetTo(double yaw, double pitch, double targe_armor_distance)
 {
     uart_process_2::uart_send send_msg;
-    send_msg.xdata = yaw;
+    send_msg.xdata = -yaw;
     send_msg.ydata = pitch;
     send_msg.zdata = targe_armor_distance; // WTF?
-    send_msg.tdata = 0;
+    send_msg.tdata = targe_armor_distance != 0;
     send_msg.Cmdata = 0;
     pub.publish(send_msg);
     std::cout << "targetTo: yaw=" << yaw << ", pitch=" << pitch << std::endl;

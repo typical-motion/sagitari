@@ -21,7 +21,7 @@ cv::RotatedRect adjustRotatedRect(const cv::RotatedRect& rect) {
 #if CV_VERSION_MAJOR == 4
 	if (rect.angle > 45 && rect.angle <= 90) {
 #elif CV_VERSION_MAJOR == 3
-	if (rect.angle >= -90 && rect.angle < -45) {
+	if ((rect.angle >= -90 && rect.angle < -45)) {
 #endif		
 		cv::Point2f points[4];
 		rect.points(points);

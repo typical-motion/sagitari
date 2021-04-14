@@ -22,15 +22,15 @@ const float CONTOUR_RATIO_PREFERED = 1.5;	// ��Ե������
  * ����
  */
 const float RECTS_ANGLES_TRESHOLD = 5;		// һ�Ե���֮��ĽǶȲ���ֵ
-const float RECTS_CENTER_Y_TRESHOLD = 10;   // һ�Ե������ĵ�Y���ֵ
+const float RECTS_CENTER_Y_TRESHOLD = 50;   // һ�Ե������ĵ�Y���ֵ
 const float BARLINE_ANGLE_TRESHOLD = 3;    // һ�Ե���֮���ƽ��ֱ������������γɵĽǶ���ֵ��������Ӧ���� 90��
 /**
 *	װ�װ����������������
 */
 const float RECTS_RATIO_ARMORBOX_SMALL_LEAST = 0.65;
 const float RECTS_RATIO_ARMORBOX_SMALL_MOST = 1.2;
-const float RECTS_RATIO_ARMORBOX_BIG_LEAST = 0.7;
-const float RECTS_RATIO_ARMORBOX_BIG_MOST = 1.2;
+const float RECTS_RATIO_ARMORBOX_BIG_LEAST = 0.65;
+const float RECTS_RATIO_ARMORBOX_BIG_MOST = 5.2;
 
 /**
 * װ�װ�ģ��ƥ�����ƶ�
@@ -39,4 +39,4 @@ const float ARMORBOX_TEMPLATE_SIMILARITY = 0.6; // �ų����ƶȵ��ڴ
 
 const float CAMERA_FOCUS = 60;
 const float im_real_weights = 3.75;
-const double limit_angle_val = 2.0;
+const double limit_angle_val = 5.0;

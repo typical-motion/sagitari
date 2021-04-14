@@ -66,6 +66,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 				}
 			} else {
 				// Cancel aiming
+				std::cout << "Not found" << std::endl;
 				this->device->targetTo(0, 0, 0);
 			}
 		}
@@ -137,7 +138,6 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 			})
 		}
 		
-		cv::imshow("Tracking", tmp);
 		std_msgs::Header head_img;
     	// head_img.stamp = ros::Time(pFrameBuffer->nTimestamp * pow(10,-9),pFrameBuffer->nTimestamp - 1e9 *(int)(pFrameBuffer->nTimestamp * 1e-9));
                             //std::cout << pFrameBuffer->nTimestamp << std::endl;

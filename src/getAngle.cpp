@@ -4,9 +4,9 @@
 #include <iostream>
 using namespace std;
 using namespace cv;
-double angle_x_bias, angle_y_bias;
-#define WINDOW_WIDTH 1024
-#define WINDOW_HEIGHT 480
+double angle_x_bias = 2, angle_y_bias = 2;
+#define WINDOW_WIDTH 1280
+#define WINDOW_HEIGHT 720
 
 #define ERROR_POINT cv::Point()
 #define ERROR_RECT cv::Rect2d()
@@ -23,19 +23,19 @@ vector<double> calc_angle(const Point& prev_point,const Point &current_point,dou
 	cout << "angle check : "<< angle_vector[0] << endl;
 	if(angle_vector[0] < 0 && fabs(angle_vector[0]) > limit_angle_val)
 	{
-		angle_vector[0] -= angle_x_bias;
+		angle_vector[0] = -angle_x_bias;
 	}
 	else if(angle_vector[0] > 0 && fabs(angle_vector[0]) > limit_angle_val)
 	{
-		angle_vector[0] += angle_x_bias;
+		angle_vector[0] = angle_x_bias;
 	}
 	if(angle_vector[1] < 0 && fabs(angle_vector[1]) >limit_angle_val)
 	{
-		angle_vector[1] -= angle_y_bias;
+		angle_vector[1] = -angle_y_bias;
 	}
 	else if(angle_vector[1] > 0 && fabs(angle_vector[1]) > limit_angle_val)
 	{
-		angle_vector[1] += angle_y_bias;
+		angle_vector[1] = angle_y_bias;
 	}
 	return angle_vector;
 }
@@ -52,7 +52,7 @@ std::vector<double> Sagitari::getAngle(const cv::Point &targe_armor_center_predi
 	if (!(targe_armor_center_predict == ERROR_POINT))
 	{
 		// std::vector<double> targe_armor_angle = this->getAngle_(cv::Point(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2), targe_armor_center_predict, distance);
-		std::vector<double> targe_armor_angle = calc_angle(cv::Point(0, 0), targe_armor_center_predict, CAMERA_FOCUS);
+		std::vector<double> targe_armor_angle = calc_angle(cv::Point(0, 0), targe_armor_center_predict - cv::Point(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2), CAMERA_FOCUS);
 		return targe_armor_angle;
 	}
 	return vector<double>();

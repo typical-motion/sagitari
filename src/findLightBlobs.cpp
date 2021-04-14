@@ -48,10 +48,16 @@ static double areaRatio(const std::vector<cv::Point>& contour, const cv::Rotated
 }
 // �ж������Ƿ�Ϊһ������
 static bool isValidLightBlob(const std::vector<cv::Point>& contour, const cv::RotatedRect& rect) {
-    return (1.0 < lw_rate(rect) && lw_rate(rect) < 10) &&
+    std::cout << "rect.size.area(): " << rect.size.area() << ", areaRatio(contour, rect): " << areaRatio(contour, rect) << std::endl;
+    /*
+    return (0.8 < lw_rate(rect) && lw_rate(rect) < 20) &&
         //           (rect.size.area() < 3000) &&
-        ((rect.size.area() < 50 && areaRatio(contour, rect) > 0.4) ||
-            (rect.size.area() >= 50 && areaRatio(contour, rect) > 0.6));
+        ((rect.size.area() < 200 && areaRatio(contour, rect) > 0.4) ||
+            (rect.size.area() >= 200 && areaRatio(contour, rect) > 0.6));
+    */
+   return (0.8 < lw_rate(rect) && lw_rate(rect) < 20) &&
+        //           (rect.size.area() < 3000) &&
+            (rect.size.area() >= 200 && areaRatio(contour, rect) > 0.6);
 }
 static bool isSameBlob(Lightbar barLeft, Lightbar barRight) {
     auto dist = barLeft.rect.center - barRight.rect.center;

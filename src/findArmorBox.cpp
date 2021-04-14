@@ -10,7 +10,8 @@ typedef std::pair<float, ArmorBox::Type> SimilaritySet;
  * 判断灯条角度
  **/
 inline bool isValidAngle(const Lightbar& barLeft, const Lightbar& barRight) {
-	return abs(barLeft.rect.angle - barRight.rect.angle) < RECTS_ANGLES_TRESHOLD;
+	std::cout << abs(barLeft.rect.angle - barRight.rect.angle - 180) << std::endl;
+	return abs(barLeft.rect.angle - barRight.rect.angle) < RECTS_ANGLES_TRESHOLD || abs(barLeft.rect.angle - barRight.rect.angle - 180) < RECTS_ANGLES_TRESHOLD;
 }
 
 /**
@@ -58,11 +59,15 @@ double centerDistance(cv::Rect2d box) {
  * 判断是否为一对灯条
  **/
 bool isLightbarPair(const Lightbar& barLeft, const Lightbar& barRight) {
-	if (barLeft.length < 15 || barRight.length < 15) return false;
+	// if (barLeft.length < 15 || barRight.length < 15) return false;
 	if(!isValidColor(barLeft, barRight)) return false;
+	std::cout << "Color Ok" << std::endl;
 	if (!isValidAngle(barLeft, barRight)) return false;
+	std::cout << "Angle Ok" << std::endl;
 	if (!isValidBarCenter(barLeft, barRight)) return false;
+	std::cout << "BarCenter Ok" << std::endl;
 	if (!isValidRectRatio(barLeft, barRight)) return false;
+	std::cout << "RectRatio Ok" << std::endl;
 	return true;
 }
 
@@ -128,7 +133,7 @@ static ArmorBox::Type getArmorBoxType(const ArmorBox& box, cv::Mat& srcImg) {
 	cv::cvtColor(imgShow, imgShow, cv::COLOR_RGB2GRAY);
 	cv::threshold(imgShow, imgShow, 100, 255, cv::THRESH_BINARY);
 	cv::imshow("Number", imgShow);
-
+	cv::waitKey(1);
 /*
 	std::priority_queue<SimilaritySet, std::vector<SimilaritySet>, std::greater<SimilaritySet>> similaritySet;
 	// cv::Mat transformedSmall, transformedLarge;
@@ -190,14 +195,17 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 			min_y = fmin(rect_left.y, rect_right.y) - 0.5 * (rect_left.height + rect_right.height) / 2.0;
 			max_y = fmax(rect_left.y + rect_left.height, rect_right.y + rect_right.height) +
 				0.5 * (rect_left.height + rect_right.height) / 2.0;
+			std::cout << 12 << std::endl;
 			if (min_x < 0 || max_x > src.cols || min_y < 0 || max_y > src.rows) {
 				continue;
 			}
+			std::cout << 13 << std::endl;
 			// if (state == Sagitari::State::SEARCHING && (max_y + min_y) / 2 < 120) continue;
 			if ((max_x - min_x) / (max_y - min_y) < 0.8) continue;
 			Lightbars pair_blobs = { lightbars.at(i), lightbars.at(j) };
 			ArmorBox armorBox(cv::RotatedRect(cv::Point((max_x + min_x) / 2, (max_y + min_y) / 2), cv::Size(max_x - min_x, max_y - min_y), barLeft.rect.angle), barLeft.color, std::make_pair(barLeft, barRight));
 			try {
+				std::cout << 14 << std::endl;
 				armorBox.roi = src(armorBox.boundingRect).clone();
 				// armorBox.numVertices = {};
 				/**
@@ -222,9 +230,13 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 					double horizon = abs((barLeft.rect.center - barRight.rect.center).x);
 					double ratio = horizon / avgHeight;
 				}
-			} catch(cv::Exception e) {}
+				std::cout << 15 << std::endl;
+			} catch(cv::Exception e) {
+				std::cout << "Exception" << std::endl;
+			}
 		}
 	}
+	std::cout << "armorBoxes.size()" << armorBoxes.size() << std::endl;
 	return armorBoxes;
 }
 
@@ -232,12 +244,13 @@ std::vector<ArmorBox> Sagitari::findArmorBoxes(cv::Mat& src, const Lightbars& li
 	std::vector<ArmorBox> result;
 	for (const ArmorBox& box : matchArmorBoxes(src, lightbars)) {
 		// Color filter
-		if(box.color != this->targetColor) continue;
+		// if(box.color != this->targetColor) continue;
 		// Validate similarity.
 		ArmorBox::Type type = getArmorBoxType(box, src);
 		// if (type == ArmorBox::UNKNOW) continue;
 		result.push_back(box);
 
 	}
+	std::cout << "result.size()" << result.size() << std::endl;
 	return result;
 }
