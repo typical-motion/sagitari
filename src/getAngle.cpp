@@ -51,6 +51,9 @@ std::vector<double> Sagitari::getAngle(const cv::Point &targe_armor_center_predi
 	// targe_armor_center_predict = targe_armor_center;
 	if (!(targe_armor_center_predict == ERROR_POINT))
 	{
+		if(this->lastShot) {
+			cv::Point speedVector = targe_armor_center_predict - this->lastShot;
+		}
 		// std::vector<double> targe_armor_angle = this->getAngle_(cv::Point(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2), targe_armor_center_predict, distance);
 		std::vector<double> targe_armor_angle = calc_angle(cv::Point(0, 0), targe_armor_center_predict - cv::Point(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2), CAMERA_FOCUS);
 		return targe_armor_angle;

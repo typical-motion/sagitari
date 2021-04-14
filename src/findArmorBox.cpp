@@ -96,7 +96,16 @@ cv::Mat gamma_correction(cv::Mat img, double gamma_c, double gamma_g) {
 	}
 	return out;
 }
-
+int gamma_a = 2, gamma_b = 4;
+cv::Mat imgShow;
+void updateGamma(int, void*) {
+	cv::Mat numberPic;
+	imgShow.copyTo(numberPic);
+	numberPic = gamma_correction(numberPic, 2, 4);
+	cv::imshow("Number", numberPic);
+	cv::waitKey(1);
+	std::cout << "updated" << std::endl;
+}
 /**
  * 获取装甲板类型
  **/
@@ -128,10 +137,13 @@ static ArmorBox::Type getArmorBoxType(const ArmorBox& box, cv::Mat& srcImg) {
 	}
 	warpPerspective_mat = cv::getPerspectiveTransform(box.numVertices, dstPoints);
 	warpPerspective(warpPerspective_src, warpPerspective_dst, warpPerspective_mat, cv::Size(box.roiCard.cols, box.roiCard.rows), INTER_NEAREST, BORDER_CONSTANT, Scalar(0)); //warpPerspective to get armorImage
-	cv::Mat imgShow = warpPerspective_dst.clone();
-	imgShow = gamma_correction(imgShow, 1, 3);
-	cv::cvtColor(imgShow, imgShow, cv::COLOR_RGB2GRAY);
-	cv::threshold(imgShow, imgShow, 100, 255, cv::THRESH_BINARY);
+	imgShow = warpPerspective_dst.clone();
+	namedWindow("Number");
+	createTrackbar("a", "Number", &gamma_a, 100, updateGamma);
+	createTrackbar("b", "Number", &gamma_b, 100, updateGamma);
+	// imgShow = gamma_correction(imgShow, 2, 4);
+	// cv::cvtColor(imgShow, imgShow, cv::COLOR_RGB2GRAY);
+	// cv::threshold(imgShow, imgShow, 100, 255, cv::THRESH_BINARY);
 	cv::imshow("Number", imgShow);
 	cv::waitKey(1);
 /*

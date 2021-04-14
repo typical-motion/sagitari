@@ -48,7 +48,7 @@ static double areaRatio(const std::vector<cv::Point>& contour, const cv::Rotated
 }
 // �ж������Ƿ�Ϊһ������
 static bool isValidLightBlob(const std::vector<cv::Point>& contour, const cv::RotatedRect& rect) {
-    std::cout << "rect.size.area(): " << rect.size.area() << ", areaRatio(contour, rect): " << areaRatio(contour, rect) << std::endl;
+    // std::cout << "rect.size.area(): " << rect.size.area() << ", areaRatio(contour, rect): " << areaRatio(contour, rect) << std::endl;
     /*
     return (0.8 < lw_rate(rect) && lw_rate(rect) < 20) &&
         //           (rect.size.area() < 3000) &&
