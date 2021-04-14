@@ -92,17 +92,6 @@ cv::Mat gamma_correction(cv::Mat img, double gamma_c, double gamma_g) {
 	return out;
 }
 
-
-int calcuateSimilarity(const cv::Mat& img, const cv::Mat& tmpl) {
-	static cv::Mat morphKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
-	cv::Mat res = gamma_correction(img, 1, 2);
-	cvtColor(res, res, cv::COLOR_BGR2GRAY);
-	cv::threshold(res, res, 50, 255, cv::THRESH_BINARY);
-	morphEx(res, res, morphKernel);
-	cv::imshow("gamma adjust", res);
-
-	return 0;
-}
 /**
  * 获取装甲板类型
  **/
@@ -191,7 +180,7 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 			barRightExtend.points(pointsRight);
 			barLeftExtend.center = barLeftExtendCenterOriginal;
 			barRightExtend.center = barRightExtendCenterOriginal;
-
+			
 			cv::Point topLeft = rect_left.tl();
 			cv::Point bottomRight = rect_right.br();
 

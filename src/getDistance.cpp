@@ -31,7 +31,12 @@ double Sagitari::getDistance(ArmorBox box)
     }
     vector<Point2f> point_get;
     Point2f point_get_[4];
-    box.roiCardRect.points(point_get_);
+    for (int i = 0; i < 4; i++)
+    {
+        point_get_[i] = box.numVertices[i];
+    }
+    // box.roiCardRect.points(point_get_);
+    
     int sequence_x = 0;
     for (size_t i = 1; i < 4; i++)
     {

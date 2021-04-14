@@ -4,14 +4,14 @@
 #include <uart_process_2/uart_receive.h>
 
 #include <message_filters/subscriber.h>
-#include <message_filters/time_synchronizer.h>
-
-#include <image_transport/image_transport.h>
 
 #include <opencv2/core/mat.hpp>
+
 #include <iostream>
 using namespace sensor_msgs;
 using namespace message_filters;
+
+
 cv::Mat src_img;       //原图
 cv::Mat threshold_img; //二值图
 Sagitari *g_sagitari = nullptr;
@@ -44,13 +44,7 @@ void subSubCallback(const sensor_msgs::ImageConstPtr &msg)
     //if(img_process.mod != 1) return;
     cv_bridge::CvImagePtr cv_ptr;
     cv_ptr = cv_bridge::toCvCopy(msg, "bgr8");
-    cv::Mat src_img;
-    cv_ptr->image.copyTo(src_img);
-    cv::imshow("Received", src_img);
-    cv::waitKey(1);
-    // video << src_img;
-    int key = cv::waitKey(1);
-    *g_sagitari << src_img;
+    *g_sagitari << cv_ptr->image;
 }
 ROSDeviceProvider::ROSDeviceProvider(Sagitari *sag) : sagitari(sag)
 {
@@ -61,12 +55,13 @@ ROSDeviceProvider::ROSDeviceProvider(Sagitari *sag) : sagitari(sag)
     image_transport::Subscriber subSub = it.subscribe("DahuaCamera/LowDims", 1, subSubCallback);
     ros::Subscriber sub = nh.subscribe("uart_receive", 1, subCallback_mod); //接收串口模式
     pub = nh.advertise<uart_process_2::uart_send>("uart_send", 1);          //初始化发送串口话题
+    sag->debugPublisher = it.advertise("Sagitari/debugImage",1);
     ros::Rate rate(150);
     while (ros::ok())
     {
         ros::spinOnce();
         rate.sleep();
-    }   
+    }
 
     // message_filters::Subscriber<Image> threshold_sub(nh, "threshold_image_auto_beat", 1);//接收原图
     // message_filters::Subscriber<Image> src_sub(nh, "src_image_auto_beat", 1);//接收二值图

@@ -36,3 +36,7 @@ const float RECTS_RATIO_ARMORBOX_BIG_MOST = 1.2;
 * װ�װ�ģ��ƥ�����ƶ�
 */
 const float ARMORBOX_TEMPLATE_SIMILARITY = 0.6; // �ų����ƶȵ��ڴ�ֵ
+
+const float CAMERA_FOCUS = 60;
+const float im_real_weights = 3.75;
+const double limit_angle_val = 2.0;

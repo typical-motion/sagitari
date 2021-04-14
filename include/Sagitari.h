@@ -5,6 +5,7 @@
 	#include <ros/ros.h>
 	#include <opencv2/opencv.hpp>
     #include <opencv2/tracking.hpp>
+	#include <image_transport/image_transport.h>
 
 	#include "loggging.h"
 
@@ -86,6 +87,7 @@
 		* @return 如果成功，返回true。
 		*/
 		// bool getArmorBox(cv::Mat& roi, ArmorBox*& armorBox);
+		image_transport::Publisher debugPublisher;
 	private:
 		IdentityColor targetColor;				// 目标颜色
 		State state;							// 射手状态
@@ -103,13 +105,12 @@
 		 * @return 距离
 		 **/
 		double getDistance(ArmorBox box);
+		void aimAndFire(const ArmorBox& box);
 
-		std::vector<double> getAngle(const cv::Point& point);
+		std::vector<double> getAngle(const cv::Point& point, double distance);
 		std::vector<double> getAngle_(const cv::Point& prevPoint, const cv::Point& currentPoint, double focus);
 
-		void aimAndFire(const cv::Point& point);
 		
-		double targe_armor_distance;
 		double im_real_weights = 0;
 		double real_distance_height = 0.06;
 

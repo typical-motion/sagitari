@@ -3,24 +3,31 @@
 //
 #include <opencv2/imgproc.hpp>
 /**
- * »æ³öÒ»¸ö RotatedRect ËùÃèÊöµÄ¿Õ¼ä
- * @param rect Óû»æÖÆµÄ¾ØĞÎ
- * @param out Êä³öÎ»ÖÃ
- * @param color ÑÕÉ«£¬Ä¬ÈÏÎª´¿ºì
+ * ç»˜å‡ºä¸€ä¸ª RotatedRect æ‰€æè¿°çš„ç©ºé—´
+ * @param rect æ¬²ç»˜åˆ¶çš„çŸ©å½¢
+ * @param out è¾“å‡ºä½ç½®
+ * @param color é¢œè‰²ï¼Œé»˜è®¤ä¸ºçº¯çº¢
  */
-void drawRotatedRect(const cv::RotatedRect& rect, const cv::Mat& out, const cv::Scalar& color = cv::Scalar(255, 0, 0));
+void drawRotatedRect(const cv::RotatedRect& rect, const cv::Mat& out, const cv::Scalar& color = cv::Scalar(200, 100, 0));
 /**
- *  ¼ÆËãÕıÈ·µÄ¾ØĞÎ¡£
- *  Í¨¹ı minAreaRect µÃµ½µÄ¾ØĞÎÓĞÒ»¸öË®Æ½·½ÏòÉÏ 0 - 90¡ã µÄĞı×ª½Ç¡£
- *  µ«Í¨³£ÎÒ(ÃÇ)ÈÏÎªÕâ¸öĞı×ª½ÇÓ¦¸Ã²ÎÕÕµÄÊÇ´¹Ö±Æ½Ãæ¡£
- *  Õâ»áµ¼ÖÂ¿í¶ÈÓë¸ß¶ÈÏà·´¡¢ËÄ¸öµãµÄË³ĞòÒ²³öÏÖ±ä»¯¡£
- *  @param rect Ô­ RotatedRect
- *  @return µ÷ÕûºóµÄ RotatedRect
+ * ç»˜å‡ºä¸€ä¸ªå››ä¸ªç‚¹æ‰€æè¿°çš„ç©ºé—´
+ * @param rect æ¬²ç»˜åˆ¶çš„çŸ©å½¢
+ * @param out è¾“å‡ºä½ç½®
+ * @param color é¢œè‰²ï¼Œé»˜è®¤ä¸ºçº¯çº¢
+ */
+void drawPoints(const cv::Point2f points[], const cv::Mat& out, const cv::Scalar& color = cv::Scalar(200, 100, 0));
+/**
+ *  è®¡ç®—æ­£ç¡®çš„çŸ©å½¢ã€‚
+ *  é€šè¿‡ minAreaRect å¾—åˆ°çš„çŸ©å½¢æœ‰ä¸€ä¸ªæ°´å¹³æ–¹å‘ä¸Š 0 - 90Â° çš„æ—‹è½¬è§’ã€‚
+ *  ä½†é€šå¸¸æˆ‘(ä»¬)è®¤ä¸ºè¿™ä¸ªæ—‹è½¬è§’åº”è¯¥å‚ç…§çš„æ˜¯å‚ç›´å¹³é¢ã€‚
+ *  è¿™ä¼šå¯¼è‡´å®½åº¦ä¸é«˜åº¦ç›¸åã€å››ä¸ªç‚¹çš„é¡ºåºä¹Ÿå‡ºç°å˜åŒ–ã€‚
+ *  @param rect åŸ RotatedRect
+ *  @return è°ƒæ•´åçš„ RotatedRect
  */
 cv::RotatedRect adjustRotatedRect(const cv::RotatedRect& rect);
 
 /**
- * ¿ª±ÕÔËËã
+ * å¼€é—­è¿ç®—
  */
 void morphEx(const cv::Mat& in, CV_OUT cv::Mat out, const cv::Mat& kernel);
 

@@ -1,7 +1,7 @@
 #include "Sagitari.h"
 #include <opencv2/opencv.hpp>
 IODeviceProvider::IODeviceProvider() {
-	// capture = cv::VideoCapture("/home/lss233/sagitari_ws/test.avi");
+	capture = cv::VideoCapture("/home/lss233/sagitari_ws/test.avi");
 	// auto fourcc = cv::VideoWriter::fourcc('m', 'p', '4', 'v');
 	cv::Mat tmp;
 	capture >> tmp;
@@ -12,7 +12,7 @@ IODeviceProvider::~IODeviceProvider() {
 }
 void IODeviceProvider::input(cv::Mat& mat) {
 	// capture >> mat;
-	cv::Mat tmpMat = cv::imread("/home/lss233/sagitari_ws/test.png");
+	cv::Mat tmpMat = cv::imread("/home/lss233/sagitari_ws/Rect_screenshot_13.04.2021.png");
 	tmpMat.copyTo(mat);
 	// mat.copyTo(process);
 }

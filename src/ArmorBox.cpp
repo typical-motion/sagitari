@@ -24,4 +24,11 @@ void ArmorBox::relocateROI(float x, float y) {
 	this->lightbars.second.boundingRect.y += y;
 	this->lightbars.second.rect.center.x += x;
 	this->lightbars.second.rect.center.y += y;
+
+	this->roiCardRect.center.x += x;
+	this->roiCardRect.center.y += y;
+	for(int i = 0; i < 4; ++i) {
+		this->numVertices[i].x += x;
+		this->numVertices[i].y += y;
+	}
 }

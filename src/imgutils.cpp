@@ -2,23 +2,20 @@
 #include <vector>
 #include <iostream>
 void drawRotatedRect(const cv::RotatedRect& rect, const cv::Mat& out, const cv::Scalar& color) {
-#if CV_VERSION_MAJOR == 4
-	cv::Point2f vertices2f[4];
-	cv::Point vertices[4];
-	rect.points(vertices2f);
-	for (int i = 0; i < 4; ++i) {
-		vertices[i] = vertices2f[i];
-	}
-	cv::fillConvexPoly(out, vertices, 4, color);
-#elif CV_VERSION_MAJOR == 3
 	cv::Point2f vertices2f[4];
 	rect.points(vertices2f);
-	std::vector<cv::Point> vecties;
 	for (int i = 0; i < 4; ++i) {
-		vecties.push_back(vertices2f[i]);
+		for (int j = i; j < 4; ++j) {
+			cv::line(out, vertices2f[i], vertices2f[j], color, 2);
+		}
 	}
-	cv::fillConvexPoly(out, vecties, color);
-#endif
+}
+void drawPoints(const cv::Point2f points[], const cv::Mat& out, const cv::Scalar& color) {
+	for (int i = 0; i < 4; ++i) {
+		for (int j = i; j < 4; ++j) {
+			cv::line(out, points[i], points[j], color, 2);
+		}
+	}
 }
 cv::RotatedRect adjustRotatedRect(const cv::RotatedRect& rect) {
 #if CV_VERSION_MAJOR == 4
