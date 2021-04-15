@@ -8,6 +8,7 @@
 	#include <image_transport/image_transport.h>
 
 	#include "loggging.h"
+	#include "shape.h"
 
 	enum class IdentityColor {
 		IDENTITY_RED, IDENTITY_BLUE
@@ -15,6 +16,7 @@
 	class Lightbar {
 	public :
 		cv::RotatedRect rect;
+		Rectangle rectangle;
 		cv::Rect boundingRect;
 		float aspectRatio;
 		IdentityColor color;
@@ -88,6 +90,7 @@
 		*/
 		// bool getArmorBox(cv::Mat& roi, ArmorBox*& armorBox);
 		image_transport::Publisher debugPublisher;
+		void cancelTracking();
 	private:
 		IdentityColor targetColor;				// 目标颜色
 		State state;							// 射手状态

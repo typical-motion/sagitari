@@ -10,7 +10,7 @@ typedef std::pair<float, ArmorBox::Type> SimilaritySet;
  * 判断灯条角度
  **/
 inline bool isValidAngle(const Lightbar& barLeft, const Lightbar& barRight) {
-	return abs(barLeft.rect.angle - barRight.rect.angle) < RECTS_ANGLES_TRESHOLD;
+	return abs(barLeft.rectangle.angle() - barRight.rectangle.angle()) < RECTS_ANGLES_TRESHOLD;
 }
 
 /**
@@ -58,7 +58,7 @@ double centerDistance(cv::Rect2d box) {
  * 判断是否为一对灯条
  **/
 bool isLightbarPair(const Lightbar& barLeft, const Lightbar& barRight) {
-	if (barLeft.length < 15 || barRight.length < 15) return false;
+	// if (barLeft.length < 15 || barRight.length < 15) return false;
 	if(!isValidColor(barLeft, barRight)) return false;
 	if (!isValidAngle(barLeft, barRight)) return false;
 	if (!isValidBarCenter(barLeft, barRight)) return false;

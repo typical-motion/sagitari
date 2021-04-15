@@ -1,6 +1,6 @@
 #include "Sagitari.h"
 #include "imgproc.h"
-Lightbar::Lightbar(const cv::RotatedRect& rct, IdentityColor clr) : rect(adjustRotatedRect(rct)), color(clr) {
+Lightbar::Lightbar(const cv::RotatedRect& rct, IdentityColor clr) : rect(adjustRotatedRect(rct)), color(clr), rectangle(adjustRotatedRect(rct)) {
 	this->length = std::max(rect.size.height, rect.size.width);
 	this->boundingRect = rct.boundingRect();
 	this->aspectRatio = rct.size.width / rct.size.height;

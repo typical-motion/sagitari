@@ -29,6 +29,9 @@ void RM2020_armor_detector_callback(const sensor_msgs::ImageConstPtr &thr_img, c
 }
 void subCallback_mod(const uart_process_2::uart_receive _data)
 {
+    if(_data.mod == 0) {
+        g_sagitari->cancelTracking();
+    }
     /*
     gb_data.yaw = _data.yaw;
     gb_data.pitch = _data.pitch;

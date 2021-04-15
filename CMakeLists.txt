@@ -135,6 +135,7 @@ include_directories(
 add_executable(${PROJECT_NAME}_node 
     src/sagitari_node.cpp 
     "src/Sagitari.cpp"
+    "src/shape/rectangle.cpp"
     "src/findLightBlobs.cpp"
     "src/imgutils.cpp"
     "src/Lightbar.cpp"

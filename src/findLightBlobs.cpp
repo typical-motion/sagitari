@@ -18,23 +18,9 @@ static IdentityColor get_blob_color(const cv::Mat& src, const cv::RotatedRect& b
     region &= cv::Rect(0, 0, src.cols, src.rows);
     cv::Mat roi = src(region);
     int red_cnt = 0, blue_cnt = 0;
-    /*
-    for (int row = 0; row < roi.rows; row++) {
-        for (int col = 0; col < roi.cols; col++) {
-            red_cnt += roi.at<cv::Vec3b>(row, col)[2];
-            blue_cnt += roi.at<cv::Vec3b>(row, col)[0];
-        }
-    }
-    */
     std::vector<cv::Mat> channels;       // ͨ����ￄ1�7
     cv::split(roi, channels); 
     red_cnt = cv::countNonZero(channels.at(2) - channels.at(1)), blue_cnt = cv::countNonZero(channels.at(0) - channels.at(1));
-    // std::cout << "red_cnt: " << red_cnt << "" << " " << cv::countNonZero(channels.at(2) - channels.at(1)) <<std::endl;
-    // std::cout << "blue_cnt: " << blue_cnt  << "" << " " << cv::countNonZero(channels.at(0) - channels.at(1)) << std::endl;
-    // cv::imshow("red_cnt", channels.at(2) - channels.at(1));
-    // cv::imshow("blue_cnt", channels.at(0) - channels.at(1));
-    // cv::waitKey(1);
-
     if (red_cnt > blue_cnt) {
         return IdentityColor::IDENTITY_RED;
     }
@@ -90,10 +76,8 @@ Lightbars Sagitari::findLightbars(const cv::Mat& src) {
     if (src_bin_light.empty()) return light_blobs;                             // ��������
     if (src_bin_dim.empty()) return light_blobs;
 
-    if (src_bin_light.size() == cv::Size(640, 480) && false) {
-        imshow("bin_light", src_bin_light);
-        imshow("bin_dim", src_bin_dim);
-    }
+    imshow("bin_light", src_bin_light);
+    imshow("bin_dim", src_bin_dim);
     // ʹ��������ͬ�Ķ�ֵ����ֵͬʱ���е�����ȡ�����ٻ������նԶ�ֵ�����������Ӱ�졄1�7
     // ͬʱ�޳��ظ��ĵ������޳�������㣬���������ҳ����ĵ���ȡ�����ￄ1�7
     std::vector<std::vector<cv::Point>> light_contours_light, light_contours_dim;

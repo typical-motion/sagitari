@@ -26,6 +26,10 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
+		ros::NodeHandle nh;
+		image_transport::ImageTransport it(nh);
+		sagitari.debugPublisher = it.advertise("Sagitari/debugImage",1);
+
 		device = new IODeviceProvider();
 		sagitari.device = device;
 		cv::Mat target;

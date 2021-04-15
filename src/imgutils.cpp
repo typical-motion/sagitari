@@ -17,6 +17,7 @@ void drawPoints(const cv::Point2f points[], const cv::Mat& out, const cv::Scalar
 		}
 	}
 }
+/*
 cv::RotatedRect adjustRotatedRect(const cv::RotatedRect& rect) {
 #if CV_VERSION_MAJOR == 4
 	if (rect.angle > 45 && rect.angle <= 90) {
@@ -30,6 +31,15 @@ cv::RotatedRect adjustRotatedRect(const cv::RotatedRect& rect) {
 	else {
 		return rect;
 	}
+}
+*/
+cv::RotatedRect adjustRotatedRect(const cv::RotatedRect& rect) {
+	if (rect.size.width < rect.size.height) {
+		cv::RotatedRect fixed(rect);
+		fixed.angle = rect.angle - 90;
+		return fixed;
+	}
+	return rect;
 }
 
 float calcAspectRatio(const cv::RotatedRect& rect) {

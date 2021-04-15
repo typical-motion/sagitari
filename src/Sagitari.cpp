@@ -25,11 +25,11 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 				lightbars = this->findLightbars(input);
 			})
 			// Debug here
-			for (const auto &bar : lightbars)
+			for (const Lightbar &bar : lightbars)
 			{
-				drawRotatedRect(bar.rect, tmp, cv::Scalar(0, 200, 100));
+				bar.rectangle.draw(tmp);
 				std::stringstream txt;
-				txt << "angle: " << bar.rect.angle;
+				txt << "angle: " << bar.rectangle.angle();
 				cv::putText(tmp, txt.str(), bar.rect.boundingRect().br(), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(1, 150, 100));
 			}
 
@@ -95,11 +95,11 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 
 					Lightbars lightbars = this->findLightbars(reROI);
 					// Debug here
-					for (const auto &bar : lightbars)
+					for (const Lightbar &bar : lightbars)
 					{
-						drawRotatedRect(bar.rect, tmp, cv::Scalar(0, 200, 100));
+						bar.rectangle.draw(tmp);
 						std::stringstream txt;
-						txt << "angle: " << bar.rect.angle;
+						txt << "angle: " << bar.rectangle.angle();
 						cv::putText(tmp, txt.str(), bar.rect.boundingRect().br(), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(1, 150, 100));
 					}
 					std::vector<ArmorBox> boxes = this->findArmorBoxes(reROI, lightbars);
@@ -137,10 +137,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 			})
 		}
 		
-		cv::imshow("Tracking", tmp);
 		std_msgs::Header head_img;
-    	// head_img.stamp = ros::Time(pFrameBuffer->nTimestamp * pow(10,-9),pFrameBuffer->nTimestamp - 1e9 *(int)(pFrameBuffer->nTimestamp * 1e-9));
-                            //std::cout << pFrameBuffer->nTimestamp << std::endl;
         sensor_msgs::ImagePtr msg_low = cv_bridge::CvImage(head_img,"bgr8",tmp).toImageMsg();
 		this->debugPublisher.publish(msg_low);
 	}
@@ -164,4 +161,7 @@ void Sagitari::initializeTracker(const cv::Mat &src, const cv::Rect &roi)
 	params.resize = true;
 	this->tracker = cv::TrackerKCF::create(params);
 	this->tracker->init(src, roi);
+}
+void Sagitari::cancelTracking() {
+	this->state = Sagitari::State::SEARCHING;
 }
