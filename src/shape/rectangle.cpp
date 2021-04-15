@@ -36,10 +36,10 @@ void Rectangle::draw(const cv::Mat &mat) const
     }
 }
 float Rectangle::width() const {
-    return sqrt(pow(this->points[0].x - this->points[3].x, 2) + pow(this->points[0].x - this->points[1].x, 2));
+    return sqrt(pow(this->points[0].x - this->points[3].x, 2) + pow(this->points[0].y - this->points[3].y, 2));
 }
 float Rectangle::height() const {
-    return sqrt(pow(this->points[0].x - this->points[3].x, 2) + pow(this->points[0].x - this->points[1].x, 2));
+    return sqrt(pow(this->points[0].x - this->points[1].x, 2) + pow(this->points[0].y - this->points[1].y, 2));
 }
 float Rectangle::angle() const {
     float h = this->points[2].y - this->points[0].y;

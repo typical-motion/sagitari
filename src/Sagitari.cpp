@@ -14,6 +14,10 @@ Sagitari::Sagitari(IdentityColor targetColor, DeviceProvider *deviceProvider) : 
 
 Sagitari &Sagitari::operator<<(cv::Mat &input)
 {
+	std_msgs::Header head_input;
+	sensor_msgs::ImagePtr msg_input_img = cv_bridge::CvImage(head_input, "bgr8", input).toImageMsg();
+	this->debugPublisher2.publish(msg_input_img);
+
 	cv::Mat tmp = input.clone();
 	try
 	{
@@ -61,10 +65,12 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 				std::vector<double> angles = this->getAngle(cv::Point(box.lightbars.first.rect.center + box.lightbars.second.rect.center) / 2, this->getDistance(box));
 				if (angles.size() >= 2)
 				{
-					txt << "yaw: " << angles[0] << "; pitch:" << angles[1] << "; dst:" << this->getDistance(box);
-					cv::putText(tmp, txt.str(), box.boundingRect.br(), cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(1, 150, 100));
+					txt << "yaw: " << angles[0] << "; pitch:" << angles[1];
+					cv::putText(tmp, txt.str(), cv::Point(input.cols - 500, input.rows - 100), cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(1, 150, 100));
 				}
-			} else {
+			}
+			else
+			{
 				// Cancel aiming
 				std::cout << "Not found" << std::endl;
 				this->device->targetTo(0, 0, 0);
@@ -77,7 +83,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 			SAG_TIMINGM("Track a frame", tmp, 1, {
 				if (this->tracker->update(input, rect))
 				{
-					
+
 					// Tracker 结果不可信，我们需要重新查找。
 					cv::Rect nearbyRect(rect.x - rect.width / 2, rect.y - rect.height / 2, rect.width * 2, rect.height * 2);
 
@@ -96,20 +102,24 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 					cv::Mat reROI = input(nearbyRect).clone();
 
 					Lightbars lightbars = this->findLightbars(reROI);
-					// Debug here
-					for (const Lightbar &bar : lightbars)
-					{
-						bar.rectangle.draw(tmp);
-						std::stringstream txt;
-						txt << "angle: " << bar.rectangle.angle();
-						cv::putText(tmp, txt.str(), bar.rect.boundingRect().br(), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(1, 150, 100));
-					}
 					std::vector<ArmorBox> boxes = this->findArmorBoxes(reROI, lightbars);
 					if (boxes.size() > 0)
 					{ // First ?
 						ArmorBox box = boxes.at(0);
 						box.relocateROI(nearbyRect.x, nearbyRect.y);
-
+						// Debug here
+						{
+							box.lightbars.first.rectangle.draw(tmp);
+							std::stringstream txt;
+							txt << "angle: " << box.lightbars.first.rectangle.angle();
+							cv::putText(tmp, txt.str(), box.lightbars.first.rect.boundingRect().br(), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(1, 150, 100));
+						}
+						{
+							box.lightbars.second.rectangle.draw(tmp);
+							std::stringstream txt;
+							txt << "angle: " << box.lightbars.second.rectangle.angle();
+							cv::putText(tmp, txt.str(), box.lightbars.second.rect.boundingRect().br(), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(1, 150, 100));
+						}
 						this->aimAndFire(box);
 						// Restart Trracking to improve accuracy
 						this->initializeTracker(input, box.boundingRect);
@@ -120,36 +130,55 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 						std::vector<double> angles = this->getAngle(cv::Point(box.lightbars.first.rect.center + box.lightbars.second.rect.center) / 2, this->getDistance(box));
 						if (angles.size() >= 2)
 						{
-							txt << "yaw: " << angles[0] << "; pitch:" << angles[1] << "; dst:" << this->getDistance(box);
-							cv::putText(tmp, txt.str(), box.boundingRect.br(), cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(1, 150, 100));
+							txt << "yaw: " << angles[0] << "; pitch:" << angles[1];
+							cv::putText(tmp, txt.str(), cv::Point(input.cols - 500, input.rows - 100), cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(1, 150, 100));
 						}
 					}
 					else
 					{ // Tracking failed.
 						// this->state = Sagitari::State::SEARCHING;
-						try {
+						try
+						{
 							std::vector<cv::Mat> channels;
 							cv::split(input, channels);
 							cv::Mat elem = channels.at(0);
 							int count = cv::countNonZero(elem(rect));
 							std::vector<std::vector<cv::Point>> contours;
-							cv::findContours(elem(rect), contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-							std::cout << "count" << count << std::endl;
+							cv::Mat color_channel;
+							cv::split(input, channels);
+							if (this->targetColor == IdentityColor::IDENTITY_BLUE)
+							{
+								color_channel = channels[0];
+							}
+							else if (this->targetColor == IdentityColor::IDENTITY_RED)
+							{
+								color_channel = channels[2];
+							}
+
+							static cv::Mat morphKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(3, 5));
+							cv::morphologyEx(color_channel, color_channel, cv::MORPH_CLOSE, morphKernel);
+							cv::morphologyEx(color_channel, color_channel, cv::MORPH_OPEN, morphKernel);
+
+							cv::findContours(color_channel(rect), contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 							std::cout << "contours.size()" << contours.size() << std::endl;
-							if(contours.size() < 2 || contours.size() > 4) {
+							cv::imshow("KCF Rect", color_channel(rect));
+							if (contours.size() < 2 || contours.size() > 8)
+							{
 								this->state = Sagitari::State::SEARCHING;
 								this->device->targetTo(0, 0, 0);
-							} else {
+							}
+							else
+							{
 								cv::rectangle(tmp, rect, cv::Scalar(255, 200, 200), 2);
 								std::cout << "KCF mode" << std::endl;
 								this->aimAndFire((rect.tl() + rect.br()) / 2);
 							}
-						} catch(cv::Exception e) {
+						}
+						catch (cv::Exception e)
+						{
 							this->state = Sagitari::State::SEARCHING;
 							this->device->targetTo(0, 0, 0);
 						}
-						
-						
 					}
 					
 				}
@@ -161,9 +190,9 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 				}
 			})
 		}
-		
+
 		std_msgs::Header head_img;
-        sensor_msgs::ImagePtr msg_low = cv_bridge::CvImage(head_img,"bgr8",tmp).toImageMsg();
+		sensor_msgs::ImagePtr msg_low = cv_bridge::CvImage(head_img, "bgr8", tmp).toImageMsg();
 		this->debugPublisher.publish(msg_low);
 	}
 	catch (cv::Exception e)
@@ -176,19 +205,23 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 
 void Sagitari::aimAndFire(const ArmorBox &box)
 {
-	// double distance = this->getDistance(box);
-	std::vector<double> angles = this->getAngle(cv::Point(box.lightbars.first.rect.center + box.lightbars.second.rect.center) / 2, 0);
-	if (angles.size() >= 2) {
-		this->device->targetTo(angles[0], angles[1], 1);
-		this->lastShot = cv::Point(box.lightbars.first.rect.center + box.lightbars.second.rect.center) / 2;
-	}
+	this->aimAndFire(cv::Point(box.lightbars.first.rect.center + box.lightbars.second.rect.center) / 2);
 }
-void Sagitari::aimAndFire(const cv::Point2f& point)
+void Sagitari::aimAndFire(const cv::Point2f &point)
 {
 	// double distance = this->getDistance(box);
-	
-	std::vector<double> angles = this->getAngle(point, 0);
-	if (angles.size() >= 2){
+	cv::Point2f appendVector;
+	if(this->trackingSession.pointTime == 0) {
+		this->trackingSession.pointTime = cv::getTickCount() / cv::getTickFrequency();
+		this->trackingSession.pointAt = cv::Point2f(point);
+	} else if(this->trackingSession.pointTime - (cv::getTickCount() / cv::getTickFrequency()) > 1) {
+		appendVector = point - this->trackingSession.pointAt;
+		this->trackingSession.reset();
+	}
+	std::vector<double> angles = this->getAngle(point + appendVector, 0);
+	if (angles.size() >= 2)
+	{
+		
 		this->device->targetTo(angles[0], angles[1], 1);
 		this->lastShot = point;
 	}
@@ -199,7 +232,9 @@ void Sagitari::initializeTracker(const cv::Mat &src, const cv::Rect &roi)
 	params.resize = true;
 	this->tracker = cv::TrackerKCF::create(params);
 	this->tracker->init(src, roi);
+	this->trackingSession.reset();
 }
-void Sagitari::cancelTracking() {
+void Sagitari::cancelTracking()
+{
 	this->state = Sagitari::State::SEARCHING;
 }

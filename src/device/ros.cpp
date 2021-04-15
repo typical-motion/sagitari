@@ -28,7 +28,7 @@ void RM2020_armor_detector_callback(const sensor_msgs::ImageConstPtr &thr_img, c
 }
 void subCallback_mod(const uart_process_2::uart_receive _data)
 {
-    if(_data.mod == 0) {
+    if(_data.pitch == -9080) {
         g_sagitari->cancelTracking();
     }
     /*
@@ -58,6 +58,7 @@ ROSDeviceProvider::ROSDeviceProvider(Sagitari *sag) : sagitari(sag)
     ros::Subscriber sub = nh.subscribe("uart_receive", 1, subCallback_mod); //接收串口模式
     pub = nh.advertise<uart_process_2::uart_send>("uart_send", 1);          //初始化发送串口话题
     sag->debugPublisher = it.advertise("Sagitari/debugImage",1);
+    sag->debugPublisher2 = it.advertise("Sagitari/debugImage2",1);
     ros::Rate rate(150);
     while (ros::ok())
     {

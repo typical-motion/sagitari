@@ -145,6 +145,7 @@ add_executable(${PROJECT_NAME}_node
     "src/findArmorBox.cpp"
     "src/logging.cpp"
     "src/getArmorBox.cpp"
+    "src/TrackingSession.cpp"
     "src/device/ros.cpp"
     "src/device/io.cpp"
 )

@@ -7,6 +7,8 @@
     #include <opencv2/tracking.hpp>
 	#include <image_transport/image_transport.h>
 
+	#include "TrackingSession.h"
+
 	#include "loggging.h"
 	#include "shape.h"
 
@@ -90,6 +92,7 @@
 		*/
 		// bool getArmorBox(cv::Mat& roi, ArmorBox*& armorBox);
 		image_transport::Publisher debugPublisher;
+		image_transport::Publisher debugPublisher2;
 		void cancelTracking();
 	private:
 		IdentityColor targetColor;				// 目标颜色
@@ -117,6 +120,7 @@
 		cv::Point lastShot;
 		double im_real_weights = 0;
 		double real_distance_height = 0.06;
+		TrackingSession trackingSession;
 
 		
 	};

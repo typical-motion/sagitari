@@ -31,4 +31,6 @@ void ArmorBox::relocateROI(float x, float y) {
 		this->numVertices[i].x += x;
 		this->numVertices[i].y += y;
 	}
+	this->lightbars.first.rectangle.relocateROI(x, y);
+	this->lightbars.second.rectangle.relocateROI(x, y);
 }

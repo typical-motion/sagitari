@@ -96,15 +96,16 @@ cv::Mat gamma_correction(cv::Mat img, double gamma_c, double gamma_g) {
 	}
 	return out;
 }
-int gamma_a = 2, gamma_b = 4;
+int gamma_a = 1, gamma_b = 10;
+bool updated = false;
 cv::Mat imgShow;
 void updateGamma(int, void*) {
+	updated = true;
 	cv::Mat numberPic;
 	imgShow.copyTo(numberPic);
-	numberPic = gamma_correction(numberPic, 2, 4);
+	numberPic = gamma_correction(numberPic, gamma_a, gamma_b);
+	cv::threshold(numberPic, numberPic, 100, 255, cv::THRESH_BINARY);
 	cv::imshow("Number", numberPic);
-	cv::waitKey(1);
-	std::cout << "updated" << std::endl;
 }
 /**
  * 获取装甲板类型
@@ -142,10 +143,15 @@ static ArmorBox::Type getArmorBoxType(const ArmorBox& box, cv::Mat& srcImg) {
 	createTrackbar("a", "Number", &gamma_a, 100, updateGamma);
 	createTrackbar("b", "Number", &gamma_b, 100, updateGamma);
 	// imgShow = gamma_correction(imgShow, 2, 4);
-	// cv::cvtColor(imgShow, imgShow, cv::COLOR_RGB2GRAY);
 	// cv::threshold(imgShow, imgShow, 100, 255, cv::THRESH_BINARY);
-	cv::imshow("Number", imgShow);
-	cv::waitKey(1);
+	// cv::threshold(imgShow, imgShow, 100, 255, cv::THRESH_BINARY);
+	// cv::cvtColor(imgShow, imgShow, cv::COLOR_RGB2GRAY);
+	imgShow = gamma_correction(imgShow, 1, 10);
+	cv::Mat numberPic;
+	cv::threshold(imgShow, numberPic, 150, 255, cv::THRESH_BINARY);
+	cv::cvtColor(numberPic, numberPic, cv::COLOR_RGB2GRAY);
+	cv::imshow("Number", numberPic);
+	// cv::waitKey(1);
 /*
 	std::priority_queue<SimilaritySet, std::vector<SimilaritySet>, std::greater<SimilaritySet>> similaritySet;
 	// cv::Mat transformedSmall, transformedLarge;
@@ -248,7 +254,6 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 			}
 		}
 	}
-	std::cout << "armorBoxes.size()" << armorBoxes.size() << std::endl;
 	return armorBoxes;
 }
 
@@ -263,6 +268,5 @@ std::vector<ArmorBox> Sagitari::findArmorBoxes(cv::Mat& src, const Lightbars& li
 		result.push_back(box);
 
 	}
-	std::cout << "result.size()" << result.size() << std::endl;
 	return result;
 }
