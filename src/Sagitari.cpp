@@ -66,6 +66,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 				}
 			} else {
 				// Cancel aiming
+				std::cout << "Not found" << std::endl;
 				this->device->targetTo(0, 0, 0);
 			}
 		}
@@ -76,6 +77,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 			SAG_TIMINGM("Track a frame", tmp, 1, {
 				if (this->tracker->update(input, rect))
 				{
+					
 					// Tracker 结果不可信，我们需要重新查找。
 					cv::Rect nearbyRect(rect.x - rect.width / 2, rect.y - rect.height / 2, rect.width * 2, rect.height * 2);
 
@@ -124,9 +126,32 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 					}
 					else
 					{ // Tracking failed.
-						this->state = Sagitari::State::SEARCHING;
-						this->device->targetTo(0, 0, 0);
+						// this->state = Sagitari::State::SEARCHING;
+						try {
+							std::vector<cv::Mat> channels;
+							cv::split(input, channels);
+							cv::Mat elem = channels.at(0);
+							int count = cv::countNonZero(elem(rect));
+							std::vector<std::vector<cv::Point>> contours;
+							cv::findContours(elem(rect), contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+							std::cout << "count" << count << std::endl;
+							std::cout << "contours.size()" << contours.size() << std::endl;
+							if(contours.size() < 2 || contours.size() > 4) {
+								this->state = Sagitari::State::SEARCHING;
+								this->device->targetTo(0, 0, 0);
+							} else {
+								cv::rectangle(tmp, rect, cv::Scalar(255, 200, 200), 2);
+								std::cout << "KCF mode" << std::endl;
+								this->aimAndFire((rect.tl() + rect.br()) / 2);
+							}
+						} catch(cv::Exception e) {
+							this->state = Sagitari::State::SEARCHING;
+							this->device->targetTo(0, 0, 0);
+						}
+						
+						
 					}
+					
 				}
 				else
 				{
@@ -144,16 +169,29 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 	catch (cv::Exception e)
 	{
 		cv::imshow("Exception frame", input);
+		cv::waitKey(1);
 	}
 	return *this;
 }
 
 void Sagitari::aimAndFire(const ArmorBox &box)
 {
-	double distance = this->getDistance(box);
-	std::vector<double> angles = this->getAngle(cv::Point(box.lightbars.first.rect.center + box.lightbars.second.rect.center) / 2, distance);
-	if (angles.size() >= 2)
-		this->device->targetTo(angles[0], angles[1], distance);
+	// double distance = this->getDistance(box);
+	std::vector<double> angles = this->getAngle(cv::Point(box.lightbars.first.rect.center + box.lightbars.second.rect.center) / 2, 0);
+	if (angles.size() >= 2) {
+		this->device->targetTo(angles[0], angles[1], 1);
+		this->lastShot = cv::Point(box.lightbars.first.rect.center + box.lightbars.second.rect.center) / 2;
+	}
+}
+void Sagitari::aimAndFire(const cv::Point2f& point)
+{
+	// double distance = this->getDistance(box);
+	
+	std::vector<double> angles = this->getAngle(point, 0);
+	if (angles.size() >= 2){
+		this->device->targetTo(angles[0], angles[1], 1);
+		this->lastShot = point;
+	}
 }
 void Sagitari::initializeTracker(const cv::Mat &src, const cv::Rect &roi)
 {

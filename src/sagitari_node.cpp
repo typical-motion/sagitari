@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
 		parser.printMessage();
 		return 0;
 	}
-	Sagitari sagitari(IdentityColor::IDENTITY_RED, device);
+	Sagitari sagitari(IdentityColor::IDENTITY_BLUE, device);
 	if (parser.get<int>("usecam"))
 	{
 		device = new ROSDeviceProvider(&sagitari);

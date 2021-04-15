@@ -109,11 +109,12 @@
 		 **/
 		double getDistance(ArmorBox box);
 		void aimAndFire(const ArmorBox& box);
+		void aimAndFire(const cv::Point2f& point);
 
 		std::vector<double> getAngle(const cv::Point& point, double distance);
 		std::vector<double> getAngle_(const cv::Point& prevPoint, const cv::Point& currentPoint, double focus);
 
-		
+		cv::Point lastShot;
 		double im_real_weights = 0;
 		double real_distance_height = 0.06;
 

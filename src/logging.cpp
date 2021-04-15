@@ -15,8 +15,10 @@ namespace Logger {
 		else if (tag == Tag::L_INFO)
 			std::cout << "[INFO]  " << txt << std::endl;
 #ifdef DEBUG
+/*
 		else if (tag == Tag::L_DEBUG)
 			std::cout << "[DEBUG] " << txt << std::endl;
+*/
 #endif
 	}
 	void log(const Tag& tag, const std::string& txt, const cv::Mat& mat, int offset) {
