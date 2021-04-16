@@ -2,11 +2,11 @@
 #include <opencv2/opencv.hpp>
 #include "imgproc.h"
 static double lw_rate(const cv::RotatedRect& rect) {
-#if CV_VERSION_MAJOR == 3
-		return rect.size.height / rect.size.width;
-#elif CV_VERSION_MAJOR == 4
-		return 1 / adjustRotatedRect(rect).size.aspectRatio();
-#endif
+    if(rect.angle > -90.0) {
+        return rect.size.width / rect.size.height;
+    } else {
+        return rect.size.height / rect.size.width;
+    }
     
 }
 static IdentityColor get_blob_color(const cv::Mat& src, const cv::RotatedRect& blobPos) {
@@ -41,54 +41,50 @@ static bool isValidLightBlob(const std::vector<cv::Point>& contour, const cv::Ro
         ((rect.size.area() < 200 && areaRatio(contour, rect) > 0.4) ||
             (rect.size.area() >= 200 && areaRatio(contour, rect) > 0.6));
    */
-   return (0.8 < lw_rate(rect) && lw_rate(rect) < 20) &&
-   
-        //           (rect.size.area() < 3000) &&
-            (rect.size.area() >= 200 && areaRatio(contour, rect) > 0.6);
-    
+  // std::cout << "lw_rate" << lw_rate(rect) <<std::endl;
+  // return (4 < lw_rate(rect) && lw_rate(rect) < 10);
+  Rectangle rectangle(rect);
+  if(rectangle.angle() < 30) {
+
+  } else 
+  if(!(60 <= rectangle.angle() && rectangle.angle() <= 120)){
+      std::cout << " Lightbar - Rectangle Failed" << rectangle.angle() << std::endl;
+      return false;
+  }
+  if(!(4 <= rectangle.ratio() && rectangle.ratio() <= 10)) {
+      std::cout << " Lightbar - Ratio Failed" << rectangle.ratio() << std::endl;
+      return false;
+  }
+    std::cout << " Lightbar - Ok" << std::endl;
+    return true;
+  
 }
 static bool isSameBlob(Lightbar barLeft, Lightbar barRight) {
     auto dist = barLeft.rect.center - barRight.rect.center;
     return (dist.x * dist.x + dist.y * dist.y) < 9;
 }
-
-cv::Mat HSV_to_gray(const cv::Mat & src_image,IdentityColor mode,int h_min = 0,int h_max = 255,int s_min = 0,int s_max = 255,int v_min = 0,int v_max = 255)
-{
-	cv::Mat hsv_image;
-	cvtColor(src_image,hsv_image,CV_BGR2HSV);
-	switch(mode)
-	{
-		case IdentityColor::IDENTITY_BLUE:
-			h_min = 99;
-			h_max = 116;
-			s_min = 56;
-			s_max = 205;
-			v_min = 106;
-			v_max = 255;
-			break;
-		case IdentityColor::IDENTITY_RED:
-			h_min = 145;
-			h_max = 180;
-			s_min = 196;
-			s_max = 255;
-			v_min = 105;
-			v_max = 255;
-			break;
-	}
-	cv::Mat dst_image;
-	cv::inRange(hsv_image,cv::Scalar(h_min,s_min,v_min),cv::Scalar(h_max,s_max,v_max),dst_image);
-	return dst_image;
-	
+cv::Mat hsvFilter(const cv::Mat& src,  IdentityColor mode) {
+    cv::Mat outImage;
+    cvtColor(src, outImage, cv::COLOR_BGR2HSV);
+    if(mode == IdentityColor::IDENTITY_BLUE) {
+        static cv::Scalar blueLowerb = cv::Scalar(100, 119, 85);
+        static cv::Scalar blueUpperb = cv::Scalar(130, 255, 247);
+        cv::inRange(outImage, blueLowerb, blueUpperb, outImage);
+    } else if(mode == IdentityColor::IDENTITY_RED) {
+        static cv::Scalar redLowerb = cv::Scalar(0, 65, 240);
+        static cv::Scalar redUpperb = cv::Scalar(15, 255, 255);
+        cv::inRange(outImage, redLowerb, redUpperb, outImage);
+    }
+    return outImage;
 }
-
 Lightbars Sagitari::findLightbars(const cv::Mat& src) {
     Lightbars light_blobs;
 	cv::Mat color_channel;
-	cv::Mat src_bin_light, src_bin_dim, damnLight;
+	cv::Mat src_bin_light, src_bin_dim;
 	std::vector<cv::Mat> channels;
     cv::split(src, channels);               
     if (this->targetColor == IdentityColor::IDENTITY_BLUE) {
-        color_channel = channels[0];        
+        color_channel = channels[0];
     }
     else if (this->targetColor == IdentityColor::IDENTITY_RED) {
         color_channel = channels[2];        
@@ -102,40 +98,31 @@ Lightbars Sagitari::findLightbars(const cv::Mat& src) {
         light_threshold = 200;
     }
 
-
-    std::vector<cv::Mat> hsv_channels;
-    cv::Mat hsvMat;
-    cv::cvtColor(src, hsvMat, cv::COLOR_RGB2HSV);
-    cv::split(hsvMat, hsv_channels);
-    imshow("hsv2gray", HSV_to_gray(src, this->targetColor));
-
-
-
     cv::threshold(color_channel, src_bin_light, light_threshold, 255, cv::THRESH_BINARY); // ��ֵ����Ӧͨ��
-    cv::threshold(color_channel, src_bin_dim, 140, 255, cv::THRESH_BINARY); // ��ֵ����Ӧͨ��
-    cv::threshold(channels[1], damnLight, 254, 255, cv::THRESH_BINARY); // ��ֵ����Ӧͨ��
+    // cv::threshold(color_channel, src_bin_dim, 140, 255, cv::THRESH_BINARY); // ��ֵ����Ӧͨ��
+    src_bin_dim = hsvFilter(src, this->targetColor);
     SAG_TIMING("Process open-close calcuation", {
-        static cv::Mat morphKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(3, 5));
+        static cv::Mat morphKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
         cv::morphologyEx(src_bin_light, src_bin_light, cv::MORPH_CLOSE, morphKernel);
         cv::morphologyEx(src_bin_light, src_bin_light, cv::MORPH_OPEN, morphKernel);
-        cv::morphologyEx(src_bin_dim, src_bin_dim, cv::MORPH_CLOSE, morphKernel);
-        cv::morphologyEx(src_bin_dim, src_bin_dim, cv::MORPH_OPEN, morphKernel);
+        cv::dilate(src_bin_dim, src_bin_dim, morphKernel);
     })
 
     if (src_bin_light.empty()) return light_blobs;                             // ��������
     if (src_bin_dim.empty()) return light_blobs;
 
-    imshow("bin_light", src_bin_light - damnLight);
-    imshow("bin_dim", src_bin_dim - damnLight);
+    imshow("bin_light", src_bin_light);
+    imshow("bin_dim", src_bin_dim);
+    cv::waitKey(1);
+
     // ʹ��������ͬ�Ķ�ֵ����ֵͬʱ���е�����ȡ�����ٻ������նԶ�ֵ�����������Ӱ�졄1�7
     // ͬʱ�޳��ظ��ĵ������޳�������㣬���������ҳ����ĵ���ȡ�����ￄ1�7
     std::vector<std::vector<cv::Point>> light_contours_light, light_contours_dim;
     Lightbars light_blobs_light, light_blobs_dim;
     std::vector<cv::Vec4i> hierarchy_light, hierarchy_dim;
-    cv::Mat noiseLightRemoved = src_bin_light - damnLight;
-    cv::findContours(src_bin_light, light_contours_light, hierarchy_light, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
-    cv::findContours(src_bin_dim, light_contours_dim, hierarchy_dim, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+    cv::findContours(src_bin_light, light_contours_light, hierarchy_light, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+    cv::findContours(src_bin_dim, light_contours_dim, hierarchy_dim, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
     SAG_TIMING("Process light contours", {
         for (int i = 0; i < light_contours_light.size(); i++) {
                 if (hierarchy_light[i][2] == -1) {

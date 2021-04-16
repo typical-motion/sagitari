@@ -13,5 +13,5 @@ class Rectangle {
         float angle() const;
         float width() const;
         float height() const;
-        
+        float ratio() const;
 };

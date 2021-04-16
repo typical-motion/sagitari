@@ -14,6 +14,7 @@ Sagitari::Sagitari(IdentityColor targetColor, DeviceProvider *deviceProvider) : 
 
 Sagitari &Sagitari::operator<<(cv::Mat &input)
 {
+	
 	std_msgs::Header head_input;
 	sensor_msgs::ImagePtr msg_input_img = cv_bridge::CvImage(head_input, "bgr8", input).toImageMsg();
 	this->debugPublisher2.publish(msg_input_img);
@@ -72,7 +73,6 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 			else
 			{
 				// Cancel aiming
-				std::cout << "Not found" << std::endl;
 				this->device->targetTo(0, 0, 0);
 			}
 		}
@@ -160,8 +160,8 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 							cv::morphologyEx(color_channel, color_channel, cv::MORPH_OPEN, morphKernel);
 
 							cv::findContours(color_channel(rect), contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-							std::cout << "contours.size()" << contours.size() << std::endl;
-							cv::imshow("KCF Rect", color_channel(rect));
+							// std::cout << "contours.size()" << contours.size() << std::endl;
+							// cv::imshow("KCF Rect", color_channel(rect));
 							if (contours.size() < 2 || contours.size() > 8)
 							{
 								this->state = Sagitari::State::SEARCHING;
@@ -197,8 +197,8 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 	}
 	catch (cv::Exception e)
 	{
-		cv::imshow("Exception frame", input);
-		cv::waitKey(1);
+		// cv::imshow("Exception frame", input);
+		// cv::waitKey(1);
 	}
 	return *this;
 }

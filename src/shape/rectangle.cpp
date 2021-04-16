@@ -9,10 +9,20 @@ Rectangle::Rectangle(cv::Point2f tl, cv::Point2f tr, cv::Point2f br, cv::Point2f
     this->points[2] = br;
     this->points[3] = bl;
     std::sort(this->points, this->points + 4, [](cv::Point2f a, cv::Point2f b) { return a.y > b.y || (a.y == b.y && a.x > b.x); });
+    if(angle() >= 90.0) {
+        std::swap(this->points[2], this->points[3]);
+    } else {
+        std::swap(this->points[0], this->points[1]);
+    }
 }
 Rectangle::Rectangle(cv::RotatedRect rect) {
     rect.points(this->points);
     std::sort(this->points, this->points + 4, [](cv::Point2f a, cv::Point2f b) { return a.y > b.y || (a.y == b.y && a.x > b.x); });
+    if(angle() >= 90.0) {
+        std::swap(this->points[2], this->points[3]);
+    } else {
+        std::swap(this->points[0], this->points[1]);
+    }
 }
 
 void Rectangle::relocateROI(float x, float y)
@@ -42,12 +52,15 @@ float Rectangle::height() const {
     return sqrt(pow(this->points[0].x - this->points[1].x, 2) + pow(this->points[0].y - this->points[1].y, 2));
 }
 float Rectangle::angle() const {
-    float h = this->points[2].y - this->points[0].y;
-    float l = this->points[2].x - this->points[0].x;
+    float l = this->points[2].y - this->points[0].y;
+    float h = this->points[2].x - this->points[0].x;
     float angle = atan(h / abs(l)) * 180 / 3.1415926;
     if(l < 0) return angle + 90.0;
     return angle;
     
+}
+float Rectangle::ratio() const {
+    return height() / width();
 }
 cv::Point2f Rectangle::center() const
 {

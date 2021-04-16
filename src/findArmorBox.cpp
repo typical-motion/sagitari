@@ -10,8 +10,12 @@ typedef std::pair<float, ArmorBox::Type> SimilaritySet;
  * 判断灯条角度
  **/
 inline bool isValidAngle(const Lightbar& barLeft, const Lightbar& barRight) {
-	std::cout << abs(barLeft.rect.angle - barRight.rect.angle - 180) << std::endl;
-	return abs(barLeft.rect.angle - barRight.rect.angle) < RECTS_ANGLES_TRESHOLD || abs(barLeft.rect.angle - barRight.rect.angle - 180) < RECTS_ANGLES_TRESHOLD;
+	// std::cout << abs(barLeft.rect.angle - barRight.rect.angle - 180) << std::endl;
+	//return abs(barLeft.rect.angle - barRight.rect.angle) < RECTS_ANGLES_TRESHOLD || abs(barLeft.rect.angle - barRight.rect.angle - 180) < RECTS_ANGLES_TRESHOLD;
+	return abs(barLeft.rectangle.angle() - barRight.rectangle.angle()) < RECTS_ANGLES_TRESHOLD;
+}
+inline bool isValidBarAngle(const Lightbar& bar) {
+	return 60 <= bar.rectangle.angle() && bar.rectangle.angle() <= 120.0;
 }
 
 /**
@@ -62,6 +66,8 @@ bool isLightbarPair(const Lightbar& barLeft, const Lightbar& barRight) {
 	// if (barLeft.length < 15 || barRight.length < 15) return false;
 	if(!isValidColor(barLeft, barRight)) return false;
 	std::cout << "Color Ok" << std::endl;
+	if(!isValidBarAngle(barLeft) && !isValidBarAngle(barRight)) return false;
+	std::cout << "BarAngle Ok" << std::endl;
 	if (!isValidAngle(barLeft, barRight)) return false;
 	std::cout << "Angle Ok" << std::endl;
 	if (!isValidBarCenter(barLeft, barRight)) return false;
@@ -105,7 +111,7 @@ void updateGamma(int, void*) {
 	imgShow.copyTo(numberPic);
 	numberPic = gamma_correction(numberPic, gamma_a, gamma_b);
 	cv::threshold(numberPic, numberPic, 100, 255, cv::THRESH_BINARY);
-	cv::imshow("Number", numberPic);
+	// cv::imshow("Number", numberPic);
 }
 /**
  * 获取装甲板类型
@@ -139,9 +145,9 @@ static ArmorBox::Type getArmorBoxType(const ArmorBox& box, cv::Mat& srcImg) {
 	warpPerspective_mat = cv::getPerspectiveTransform(box.numVertices, dstPoints);
 	warpPerspective(warpPerspective_src, warpPerspective_dst, warpPerspective_mat, cv::Size(box.roiCard.cols, box.roiCard.rows), INTER_NEAREST, BORDER_CONSTANT, Scalar(0)); //warpPerspective to get armorImage
 	imgShow = warpPerspective_dst.clone();
-	namedWindow("Number");
-	createTrackbar("a", "Number", &gamma_a, 100, updateGamma);
-	createTrackbar("b", "Number", &gamma_b, 100, updateGamma);
+	// namedWindow("Number");
+	// createTrackbar("a", "Number", &gamma_a, 100, updateGamma);
+	// createTrackbar("b", "Number", &gamma_b, 100, updateGamma);
 	// imgShow = gamma_correction(imgShow, 2, 4);
 	// cv::threshold(imgShow, imgShow, 100, 255, cv::THRESH_BINARY);
 	// cv::threshold(imgShow, imgShow, 100, 255, cv::THRESH_BINARY);
@@ -150,7 +156,8 @@ static ArmorBox::Type getArmorBoxType(const ArmorBox& box, cv::Mat& srcImg) {
 	cv::Mat numberPic;
 	cv::threshold(imgShow, numberPic, 150, 255, cv::THRESH_BINARY);
 	cv::cvtColor(numberPic, numberPic, cv::COLOR_RGB2GRAY);
-	cv::imshow("Number", numberPic);
+	// cv::imshow("Number", numberPic);
+	// cv::waitKey(1);
 	// cv::waitKey(1);
 /*
 	std::priority_queue<SimilaritySet, std::vector<SimilaritySet>, std::greater<SimilaritySet>> similaritySet;
@@ -192,15 +199,10 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 			if (rect_left.x > rect_right.x) {
 				std::swap(rect_left, rect_right);
 			}
-			if(barLeftExtend.center.x > barRightExtend.center.x) {
-				std::swap(barLeftExtend, barRightExtend);
-			}
 			cv::Point2f barLeftExtendCenterOriginal(barLeft.rect.center);
 			cv::Point2f barRightExtendCenterOriginal(barRight.rect.center);
 			barLeftExtend.size.height *= 2;
 			barRightExtend.size.height *= 2;
-			barLeftExtend.points(pointsLeft);
-			barRightExtend.points(pointsRight);
 			barLeftExtend.center = barLeftExtendCenterOriginal;
 			barRightExtend.center = barRightExtendCenterOriginal;
 			
@@ -213,32 +215,40 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 			min_y = fmin(rect_left.y, rect_right.y) - 0.5 * (rect_left.height + rect_right.height) / 2.0;
 			max_y = fmax(rect_left.y + rect_left.height, rect_right.y + rect_right.height) +
 				0.5 * (rect_left.height + rect_right.height) / 2.0;
-			std::cout << 12 << std::endl;
 			if (min_x < 0 || max_x > src.cols || min_y < 0 || max_y > src.rows) {
 				continue;
 			}
-			std::cout << 13 << std::endl;
 			// if (state == Sagitari::State::SEARCHING && (max_y + min_y) / 2 < 120) continue;
 			if ((max_x - min_x) / (max_y - min_y) < 0.8) continue;
 			Lightbars pair_blobs = { lightbars.at(i), lightbars.at(j) };
 			ArmorBox armorBox(cv::RotatedRect(cv::Point((max_x + min_x) / 2, (max_y + min_y) / 2), cv::Size(max_x - min_x, max_y - min_y), barLeft.rect.angle), barLeft.color, std::make_pair(barLeft, barRight));
+
+
+			barLeftExtend.points(pointsLeft);
+			barRightExtend.points(pointsRight);
+			Rectangle rectBarLeftExtend(barLeftExtend);
+			Rectangle rectBarRightExtend(barRightExtend);
+
+			if(rectBarLeftExtend.center().x > rectBarRightExtend.center().x) {
+				std::swap(rectBarLeftExtend, rectBarRightExtend);
+			}
 			try {
-				std::cout << 14 << std::endl;
 				armorBox.roi = src(armorBox.boundingRect).clone();
 				// armorBox.numVertices = {};
 				/**
-				 *  1        2
+				 *  2        3             2           3            2          3
 				 *  ----------
 				 *  |        |
 				 *  |        |
 				 *  ----------
-				 *  0        3
+				 *  1        0             1           0            1          0
 				 * 
 				 */
-				armorBox.numVertices[0] = pointsLeft[2];
-				armorBox.numVertices[1] = pointsRight[1];
-				armorBox.numVertices[2] = pointsRight[0];
-				armorBox.numVertices[3] = pointsLeft[3];
+				
+				armorBox.numVertices[0] = rectBarRightExtend.points[1];
+				armorBox.numVertices[1] = rectBarLeftExtend.points[0];
+				armorBox.numVertices[2] = rectBarLeftExtend.points[3];
+				armorBox.numVertices[3] = rectBarRightExtend.points[2];
 				// cv::RotatedRect relocateRect = cv::RotatedRect(pointsLeft[0], pointsLeft[1], pointsRight[2]);
 				armorBox.roiCardRect = cv::RotatedRect(armorBox.rect.center, cv::Size(std::min(armorBox.rect.size.width, armorBox.rect.size.height), std::min(armorBox.rect.size.width, armorBox.rect.size.height)), barLeft.rect.angle);
 				armorBox.roiCard = src(armorBox.roiCardRect.boundingRect2f());

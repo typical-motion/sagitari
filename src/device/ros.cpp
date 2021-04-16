@@ -11,7 +11,6 @@
 using namespace sensor_msgs;
 using namespace message_filters;
 
-
 cv::Mat src_img;       //原图
 cv::Mat threshold_img; //二值图
 Sagitari *g_sagitari = nullptr;
@@ -28,7 +27,8 @@ void RM2020_armor_detector_callback(const sensor_msgs::ImageConstPtr &thr_img, c
 }
 void subCallback_mod(const uart_process_2::uart_receive _data)
 {
-    if(_data.pitch == -9080) {
+    if (_data.pitch == -9080)
+    {
         g_sagitari->cancelTracking();
     }
     /*
@@ -46,7 +46,16 @@ void subSubCallback(const sensor_msgs::ImageConstPtr &msg)
     //if(img_process.mod != 1) return;
     cv_bridge::CvImagePtr cv_ptr;
     cv_ptr = cv_bridge::toCvCopy(msg, "bgr8");
-    *g_sagitari << cv_ptr->image;
+    do
+    {
+        double __timer_startAt = cv::getTickCount();
+        *g_sagitari << cv_ptr->image;
+        system("clear");
+        std::stringstream str;
+        std::cout << " - Timing: "
+            << "Total"
+            << " elapsed time:" << std::to_string((cv::getTickCount() - __timer_startAt) / cv::getTickFrequency()) << "s." << std::endl;
+    } while (0);
 }
 ROSDeviceProvider::ROSDeviceProvider(Sagitari *sag) : sagitari(sag)
 {
@@ -57,8 +66,8 @@ ROSDeviceProvider::ROSDeviceProvider(Sagitari *sag) : sagitari(sag)
     image_transport::Subscriber subSub = it.subscribe("DahuaCamera/LowDims", 1, subSubCallback);
     ros::Subscriber sub = nh.subscribe("uart_receive", 1, subCallback_mod); //接收串口模式
     pub = nh.advertise<uart_process_2::uart_send>("uart_send", 1);          //初始化发送串口话题
-    sag->debugPublisher = it.advertise("Sagitari/debugImage",1);
-    sag->debugPublisher2 = it.advertise("Sagitari/debugImage2",1);
+    sag->debugPublisher = it.advertise("Sagitari/debugImage", 1);
+    sag->debugPublisher2 = it.advertise("Sagitari/debugImage2", 1);
     ros::Rate rate(150);
     while (ros::ok())
     {
