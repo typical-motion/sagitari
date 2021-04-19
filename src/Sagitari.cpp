@@ -4,7 +4,6 @@
 #include "imgproc.h"
 #include <opencv2/opencv.hpp>
 #include <opencv2/tracking.hpp>
-#include <cv_bridge/cv_bridge.h>
 using namespace std;
 
 Sagitari::Sagitari(IdentityColor targetColor, DeviceProvider *deviceProvider) : targetColor(targetColor), device(deviceProvider)
@@ -14,11 +13,10 @@ Sagitari::Sagitari(IdentityColor targetColor, DeviceProvider *deviceProvider) : 
 
 Sagitari &Sagitari::operator<<(cv::Mat &input)
 {
-	
-	std_msgs::Header head_input;
-	sensor_msgs::ImagePtr msg_input_img = cv_bridge::CvImage(head_input, "bgr8", input).toImageMsg();
-	this->debugPublisher2.publish(msg_input_img);
-
+	this->sendOriginalImage(input);
+	cv::Mat bright;
+	gammaCorrection(input, bright, 0.6);
+	this->sendDebugImage("Bright", bright);
 	cv::Mat tmp = input.clone();
 	try
 	{
@@ -56,7 +54,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 				ArmorBox box = boxes.at(0);
 
 				SAG_TIMINGM("Tracker Intialization", tmp, 3, {
-					this->initializeTracker(input, box.boundingRect);
+					this->initializeTracker(bright, box.boundingRect);
 				})
 				// 进入追踪模式
 				this->state = Sagitari::State::TRACKING;
@@ -122,7 +120,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 						}
 						this->aimAndFire(box);
 						// Restart Trracking to improve accuracy
-						this->initializeTracker(input, box.boundingRect);
+						this->initializeTracker(bright, box.boundingRect);
 
 						// Debug here
 						drawPoints(box.numVertices, tmp);
@@ -190,10 +188,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 				}
 			})
 		}
-
-		std_msgs::Header head_img;
-		sensor_msgs::ImagePtr msg_low = cv_bridge::CvImage(head_img, "bgr8", tmp).toImageMsg();
-		this->debugPublisher.publish(msg_low);
+		this->sendDebugImage("Tracking", tmp);
 	}
 	catch (cv::Exception e)
 	{

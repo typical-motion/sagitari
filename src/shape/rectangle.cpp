@@ -14,6 +14,12 @@ Rectangle::Rectangle(cv::Point2f tl, cv::Point2f tr, cv::Point2f br, cv::Point2f
     } else {
         std::swap(this->points[0], this->points[1]);
     }
+    // std::swap(this->points[0], this->points[1]);
+    /*
+    if(this->points[1].x > this->points[0].x) {
+        std::swap(this->points[0], this->points[1]);
+    }
+    */
 }
 Rectangle::Rectangle(cv::RotatedRect rect) {
     rect.points(this->points);
@@ -21,6 +27,9 @@ Rectangle::Rectangle(cv::RotatedRect rect) {
     if(angle() >= 90.0) {
         std::swap(this->points[2], this->points[3]);
     } else {
+        std::swap(this->points[0], this->points[1]);
+    }
+    if(this->points[0].x > this->points[1].x) {
         std::swap(this->points[0], this->points[1]);
     }
 }
@@ -46,10 +55,12 @@ void Rectangle::draw(const cv::Mat &mat) const
     }
 }
 float Rectangle::width() const {
-    return sqrt(pow(this->points[0].x - this->points[3].x, 2) + pow(this->points[0].y - this->points[3].y, 2));
+    return sqrt(pow(this->points[0].x - this->points[1].x, 2) + pow(this->points[0].y - this->points[1].y, 2));
+    // return sqrt(pow(this->points[0].x - this->points[3].x, 2) + pow(this->points[0].y - this->points[3].y, 2));
 }
 float Rectangle::height() const {
-    return sqrt(pow(this->points[0].x - this->points[1].x, 2) + pow(this->points[0].y - this->points[1].y, 2));
+    return sqrt(pow(this->points[0].x - this->points[3].x, 2) + pow(this->points[0].y - this->points[3].y, 2));
+    // return sqrt(pow(this->points[0].x - this->points[1].x, 2) + pow(this->points[0].y - this->points[1].y, 2));
 }
 float Rectangle::angle() const {
     float l = this->points[2].y - this->points[0].y;

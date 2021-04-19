@@ -8,14 +8,14 @@
  * @param out 输出位置
  * @param color 颜色，默认为纯红
  */
-void drawRotatedRect(const cv::RotatedRect& rect, const cv::Mat& out, const cv::Scalar& color = cv::Scalar(200, 100, 0));
+void drawRotatedRect(const cv::RotatedRect &rect, const cv::Mat &out, const cv::Scalar &color = cv::Scalar(200, 100, 0));
 /**
  * 绘出一个四个点所描述的空间
  * @param rect 欲绘制的矩形
  * @param out 输出位置
  * @param color 颜色，默认为纯红
  */
-void drawPoints(const cv::Point2f points[], const cv::Mat& out, const cv::Scalar& color = cv::Scalar(200, 100, 0));
+void drawPoints(const cv::Point2f points[], const cv::Mat &out, const cv::Scalar &color = cv::Scalar(200, 100, 0));
 /**
  *  计算正确的矩形。
  *  通过 minAreaRect 得到的矩形有一个水平方向上 0 - 90° 的旋转角。
@@ -24,11 +24,13 @@ void drawPoints(const cv::Point2f points[], const cv::Mat& out, const cv::Scalar
  *  @param rect 原 RotatedRect
  *  @return 调整后的 RotatedRect
  */
-cv::RotatedRect adjustRotatedRect(const cv::RotatedRect& rect);
+cv::RotatedRect adjustRotatedRect(const cv::RotatedRect &rect);
 
 /**
  * 开闭运算
  */
-void morphEx(const cv::Mat& in, CV_OUT cv::Mat out, const cv::Mat& kernel);
+void morphEx(const cv::Mat &in, CV_OUT cv::Mat out, const cv::Mat &kernel);
 
-float calcAspectRatio(const cv::RotatedRect& rect);
+float calcAspectRatio(const cv::RotatedRect &rect);
+
+void gammaCorrection(const cv::Mat &img, cv::Mat &res, float gamma_);

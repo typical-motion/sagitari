@@ -1,6 +1,7 @@
 #include "Sagitari.h"
 #include <ros/ros.h>
 #include <opencv2/core/utility.hpp>
+#include <sagitari_debug/sagitari_img_debug.h>
 int main(int argc, char *argv[])
 {
 	ros::init(argc, argv, "sagitari");
@@ -21,15 +22,13 @@ int main(int argc, char *argv[])
 	{
 		device = new ROSDeviceProvider(&sagitari);
 		sagitari.device = device;
-		std::cout<< "Hey I'm here" << std::endl;
-
 	}
 	else
 	{
 		ros::NodeHandle nh;
-		image_transport::ImageTransport it(nh);
-		sagitari.debugPublisher = it.advertise("Sagitari/debugImage",1);
-
+		image_transport::ImageTransport it(nh); 
+		sagitari.debugImagePublisher = nh.advertise<sagitari_debug::sagitari_img_debug>("Sagitari/debugImage", 1);
+		sagitari.originalImagePublisher = it.advertise("Sagitari/originalImage", 1);
 		device = new IODeviceProvider();
 		sagitari.device = device;
 		cv::Mat target;
@@ -37,7 +36,8 @@ int main(int argc, char *argv[])
 		{
 			*device >> target;
 			sagitari << target;
-			int key = cv::waitKey(1);
+			cv::imshow("target", target);
+			int key = cv::waitKey(10);
 			if (key == 'q')
 			{
 				break;

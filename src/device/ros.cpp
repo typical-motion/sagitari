@@ -2,7 +2,6 @@
 #include <cv_bridge/cv_bridge.h>
 #include <uart_process_2/uart_send.h>
 #include <uart_process_2/uart_receive.h>
-
 #include <message_filters/subscriber.h>
 
 #include <opencv2/core/mat.hpp>
@@ -14,8 +13,6 @@ using namespace message_filters;
 cv::Mat src_img;       //原图
 cv::Mat threshold_img; //二值图
 Sagitari *g_sagitari = nullptr;
-auto fourcc = cv::VideoWriter::fourcc('m', 'p', '4', 'v');
-cv::VideoWriter video = cv::VideoWriter("/home/lss233/sagitari_ws/test2.mpg", CV_FOURCC('D', 'I', 'V', 'X'), 30, cv::Size(1000, 1000));
 void RM2020_armor_detector_callback(const sensor_msgs::ImageConstPtr &thr_img, const sensor_msgs::ImageConstPtr &srceen)
 {
     cv_bridge::CvImagePtr cv_ptr_thr;
@@ -66,8 +63,8 @@ ROSDeviceProvider::ROSDeviceProvider(Sagitari *sag) : sagitari(sag)
     image_transport::Subscriber subSub = it.subscribe("DahuaCamera/LowDims", 1, subSubCallback);
     ros::Subscriber sub = nh.subscribe("uart_receive", 1, subCallback_mod); //接收串口模式
     pub = nh.advertise<uart_process_2::uart_send>("uart_send", 1);          //初始化发送串口话题
-    sag->debugPublisher = it.advertise("Sagitari/debugImage", 1);
-    sag->debugPublisher2 = it.advertise("Sagitari/debugImage2", 1);
+    sag->debugImagePublisher = nh.advertise<sagitari_debug::sagitari_img_debug>("Sagitari/debugImage", 1);
+    sag->originalImagePublisher = it.advertise("Sagitari/originalImage", 1);
     ros::Rate rate(150);
     while (ros::ok())
     {
