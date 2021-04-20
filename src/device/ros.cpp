@@ -1,4 +1,6 @@
 #include "Sagitari.h"
+#include "clearscreen.h"
+
 #include <cv_bridge/cv_bridge.h>
 #include <uart_process_2/uart_send.h>
 #include <uart_process_2/uart_receive.h>
@@ -47,7 +49,7 @@ void subSubCallback(const sensor_msgs::ImageConstPtr &msg)
     {
         double __timer_startAt = cv::getTickCount();
         *g_sagitari << cv_ptr->image;
-        system("clear");
+        clearScreen();
         std::stringstream str;
         std::cout << " - Timing: "
             << "Total"

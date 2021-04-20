@@ -137,6 +137,7 @@ add_executable(${PROJECT_NAME}_node
     "src/Sagitari.cpp"
     "src/shape/rectangle.cpp"
     "src/findLightBlobs.cpp"
+    "src/clearScreen.cpp"
     "src/imgutils.cpp"
     "src/Lightbar.cpp"
     "src/ArmorBox.cpp"
