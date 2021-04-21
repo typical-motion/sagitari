@@ -254,7 +254,10 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 	}
 	return armorBoxes;
 }
-
+bool isSameArmorBox(const ArmorBox& box1, const ArmorBox& box2) {
+	auto dist = box1.rect.center - box2.rect.center;
+    return (dist.x * dist.x + dist.y * dist.y) < 9;
+}
 std::vector<ArmorBox> Sagitari::findArmorBoxes(cv::Mat& src, const Lightbars& lightbars) {
 	std::vector<ArmorBox> result;
 	for (const ArmorBox& box : matchArmorBoxes(src, lightbars)) {
@@ -265,6 +268,22 @@ std::vector<ArmorBox> Sagitari::findArmorBoxes(cv::Mat& src, const Lightbars& li
 		// if (type == ArmorBox::UNKNOW) continue;
 		result.push_back(box);
 
+	}
+	std::vector<std::vector<ArmorBox>::iterator> boxesToRemove;
+	for(auto box1 = result.begin(); box1 != result.end(); box1++) {
+		for(auto box2 = box1; box2 != result.end(); box2++) {
+			if(box1 == box2) continue;
+			if(isSameArmorBox(*box1, *box2)) {
+				if(box1->boundingRect.area() >= box2->boundingRect.area()) {
+					boxesToRemove.push_back(box2);
+				} else {
+					boxesToRemove.push_back(box1);
+				}
+			}
+		}
+	}
+	for(const auto box : boxesToRemove) {
+		result.erase(box);
 	}
 	return result;
 }
