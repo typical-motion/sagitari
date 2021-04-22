@@ -57,6 +57,7 @@ public:
 	Type type;
 	cv::Mat roi, roiCard;
 	cv::Point2f numVertices[4];
+	double score = 0;
 	ArmorBox(const cv::RotatedRect&, const IdentityColor&, const std::pair<Lightbar, Lightbar>&);
 	/**
 	 * 调整 x, y 的偏移量

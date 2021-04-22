@@ -45,7 +45,10 @@ inline bool isValidRectRatio(const Lightbar& barLeft, const Lightbar& barRight) 
 		)
 	);
 }
-
+bool isValidBarLength(const Lightbar& barLeft, const Lightbar& barRight) {
+	float ratio = barLeft.length / barRight.length;
+	return 0.6 <= ratio <= 1.4;
+}
 bool isValidColor(const Lightbar& barLeft, const Lightbar& barRight) {
 	return barLeft.color == barRight.color;
 }
@@ -63,6 +66,8 @@ double centerDistance(cv::Rect2d box) {
  **/
 bool isLightbarPair(const Lightbar& barLeft, const Lightbar& barRight) {
 	// if (barLeft.length < 15 || barRight.length < 15) return false;
+	if(!isValidBarLength(barLeft, barRight)) return false;
+	std::cout << "BarLength Ok" << std::endl;
 	if(!isValidColor(barLeft, barRight)) return false;
 	std::cout << "Color Ok" << std::endl;
 	if(!isValidBarAngle(barLeft) && !isValidBarAngle(barRight)) return false;
@@ -196,8 +201,16 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 			if (rect_left.x > rect_right.x) {
 				std::swap(rect_left, rect_right);
 			}
-			barLeftExtend.size.height *= 2;
-			barRightExtend.size.height *= 2;
+			if(barLeftExtend.angle < -60) {
+				barLeftExtend.size.width *= 2;
+			} else {
+				barLeftExtend.size.height *= 2;
+			}
+			if(barRightExtend.angle < -60) {
+				barRightExtend.size.width *= 2;
+			} else {
+				barRightExtend.size.height *= 2;
+			}
 
 			
 			cv::Point topLeft = rect_left.tl();
@@ -274,7 +287,7 @@ std::vector<ArmorBox> Sagitari::findArmorBoxes(cv::Mat& src, const Lightbars& li
 		for(auto box2 = box1; box2 != result.end(); box2++) {
 			if(box1 == box2) continue;
 			if(isSameArmorBox(*box1, *box2)) {
-				if(box1->boundingRect.area() >= box2->boundingRect.area()) {
+				if(box1->score >= box2->score) {
 					boxesToRemove.push_back(box2);
 				} else {
 					boxesToRemove.push_back(box1);
