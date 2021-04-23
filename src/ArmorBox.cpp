@@ -7,6 +7,13 @@ ArmorBox::ArmorBox(const cv::RotatedRect& rct, const IdentityColor& clr, const s
 	boundingRect.y-=2;
 	boundingRect.width+=4;
 	boundingRect.height+=4;
+
+	// Calcuate the score
+	score = boundingRect.area();
+	score += (RECTS_CENTER_Y_TRESHOLD - abs((lbs.first.rect.center - lbs.second.rect.center).y)) * 0.4;
+	score += (RECTS_ANGLES_TRESHOLD - abs(lbs.first.rectangle.angle() - lbs.second.rectangle.angle())) * 0.6;
+
+
 }
 
 void ArmorBox::relocateROI(float x, float y) {
