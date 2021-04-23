@@ -202,20 +202,29 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 
 void Sagitari::aimAndFire(const ArmorBox &box)
 {
-	this->aimAndFire(cv::Point(box.lightbars.first.rect.center + box.lightbars.second.rect.center) / 2);
+	const int MOVE_TRESHOLD = 10;
+	cv::Point2f point = cv::Point(box.lightbars.first.rect.center + box.lightbars.second.rect.center) / 2.0;
+	cv::Point2f appendVector;
+	if(this->trackingSession.pointTime < .5) {
+		this->trackingSession.pointTime = cv::getTickCount() / cv::getTickFrequency();
+		this->trackingSession.pointAt = cv::Point2f(point);
+	} else if(this->trackingSession.pointTime - (cv::getTickCount() / cv::getTickFrequency()) > 0.5) {
+		// Do the math.
+		cv::Point2f diff = this->trackingSession.pointAt - point;
+		if(diff.x > MOVE_TRESHOLD) {
+			point.x = ((point.x + box.lightbars.second.rect.center.x ) / 2.0 );
+		} else if(diff.x < -MOVE_TRESHOLD){
+			point.x = ((point.x + box.lightbars.first.rect.center.x ) / 2.0 );
+		}
+		this->trackingSession.reset();
+	}
+	cv::Point acutalTarget = point;
+	this->aimAndFire(acutalTarget);
 }
 void Sagitari::aimAndFire(const cv::Point2f &point)
 {
 	// double distance = this->getDistance(box);
-	cv::Point2f appendVector;
-	if(this->trackingSession.pointTime == 0) {
-		this->trackingSession.pointTime = cv::getTickCount() / cv::getTickFrequency();
-		this->trackingSession.pointAt = cv::Point2f(point);
-	} else if(this->trackingSession.pointTime - (cv::getTickCount() / cv::getTickFrequency()) > 1) {
-		appendVector = point - this->trackingSession.pointAt;
-		this->trackingSession.reset();
-	}
-	std::vector<double> angles = this->getAngle(point + appendVector, 0);
+	std::vector<double> angles = this->getAngle(point, 0);
 	if (angles.size() >= 2)
 	{
 		
