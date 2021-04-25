@@ -1,6 +1,8 @@
 ﻿// Sagitari.cpp : Defines the entry point for the application.
 //
 #include "Sagitari.h"
+#include "TrackingSession.h"
+
 #include "imgproc.h"
 #include <opencv2/opencv.hpp>
 #include <opencv2/tracking.hpp>
@@ -9,6 +11,7 @@ using namespace std;
 Sagitari::Sagitari(IdentityColor targetColor, DeviceProvider *deviceProvider) : targetColor(targetColor), device(deviceProvider)
 {
 	this->state = Sagitari::State::SEARCHING;
+	this->trackingSession = new TrackingSession(*this);
 }
 
 Sagitari &Sagitari::operator<<(cv::Mat &input)
@@ -18,7 +21,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 	gammaCorrection(input, bright, 0.6);
 	this->sendDebugImage("Bright", bright);
 	cv::Mat tmp = input.clone();
-	try
+	// try
 	{
 		if (this->state == Sagitari::State::SEARCHING)
 		{
@@ -118,6 +121,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 							txt << "angle: " << box.lightbars.second.rectangle.angle();
 							cv::putText(tmp, txt.str(), box.lightbars.second.rect.boundingRect().br(), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(1, 150, 100));
 						}
+						this->trackingSession->update(input, rect);
 						this->aimAndFire(box);
 						// Restart Trracking to improve accuracy
 						this->initializeTracker(bright, box.boundingRect);
@@ -190,7 +194,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 		}
 		this->sendDebugImage("Tracking", tmp);
 	}
-	catch (cv::Exception e)
+	// catch (cv::Exception e)
 	{
 		// cv::imshow("Exception frame", input);
 		// cv::waitKey(1);
@@ -206,12 +210,12 @@ void Sagitari::aimAndFire(const cv::Point2f &point)
 {
 	// double distance = this->getDistance(box);
 	cv::Point2f appendVector;
-	if(this->trackingSession.pointTime == 0) {
-		this->trackingSession.pointTime = cv::getTickCount() / cv::getTickFrequency();
-		this->trackingSession.pointAt = cv::Point2f(point);
-	} else if(this->trackingSession.pointTime - (cv::getTickCount() / cv::getTickFrequency()) > 1) {
-		appendVector = point - this->trackingSession.pointAt;
-		this->trackingSession.reset();
+	if(this->trackingSession->pointTime == 0) {
+		this->trackingSession->pointTime = cv::getTickCount() / cv::getTickFrequency();
+		this->trackingSession->pointAt = cv::Point2f(point);
+	} else if(this->trackingSession->pointTime - (cv::getTickCount() / cv::getTickFrequency()) > 1) {
+		appendVector = point - this->trackingSession->pointAt;
+		this->trackingSession->reset();
 	}
 	std::vector<double> angles = this->getAngle(point + appendVector, 0);
 	if (angles.size() >= 2)
@@ -227,7 +231,7 @@ void Sagitari::initializeTracker(const cv::Mat &src, const cv::Rect &roi)
 	params.resize = true;
 	this->tracker = cv::TrackerKCF::create(params);
 	this->tracker->init(src, roi);
-	this->trackingSession.reset();
+	this->trackingSession->reset();
 }
 void Sagitari::cancelTracking()
 {

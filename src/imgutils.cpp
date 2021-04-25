@@ -93,3 +93,8 @@ void gammaCorrection(const cv::Mat &src, cv::Mat &out, float gamma_)
 	out = src.clone();
 	LUT(src, lookUpTable, out);
 }
+
+
+double pointLength(const cv::Point& p1, const cv::Point& p2) {
+	return sqrt(pow(p1.x - p2.x, 2) + pow(p1.y - p2.y, 2));
+}

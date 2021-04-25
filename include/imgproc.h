@@ -33,4 +33,6 @@ void morphEx(const cv::Mat &in, CV_OUT cv::Mat out, const cv::Mat &kernel);
 
 float calcAspectRatio(const cv::RotatedRect &rect);
 
+double pointLength(const cv::Point& p1, const cv::Point& p2);
+
 void gammaCorrection(const cv::Mat &img, cv::Mat &res, float gamma_);
