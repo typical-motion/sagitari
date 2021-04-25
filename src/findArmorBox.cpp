@@ -272,10 +272,9 @@ static ArmorBox::Type getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg)
 /**
  * 获取装甲板
  **/
-std::vector<ArmorBox> matchArmorBoxes(cv::Mat &src, const Lightbars &lightbars)
-{
-	if (lightbars.size() < 2)
-		return {};
+std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) {
+	if (lightbars.size() < 2) return {};
+	cv::Rect screenSpaceRect(0, 0, src.cols, src.rows);
 	std::vector<ArmorBox> armorBoxes;
 	for (int i = 0; i < lightbars.size() - 1; ++i)
 	{
@@ -337,9 +336,8 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat &src, const Lightbars &lightbars)
 			{
 				std::swap(rectBarLeftExtend, rectBarRightExtend);
 			}
-			try
-			{
-				armorBox.roi = src(armorBox.boundingRect).clone();
+			try {
+				armorBox.roi = src(armorBox.boundingRect & screenSpaceRect).clone();
 				// armorBox.numVertices = {};
 				/**
 				 *  2        3             2           3            2          3
@@ -360,7 +358,8 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat &src, const Lightbars &lightbars)
 				// cv::imshow("matchArmorBoxes", src);
 				// rectBarLeftExtend.draw(src);
 				armorBox.roiCardRect = cv::RotatedRect(armorBox.rect.center, cv::Size(std::min(armorBox.rect.size.width, armorBox.rect.size.height), std::min(armorBox.rect.size.width, armorBox.rect.size.height)), barLeft.rect.angle);
-				armorBox.roiCard = src(armorBox.roiCardRect.boundingRect2f());
+
+				armorBox.roiCard = src(armorBox.roiCardRect.boundingRect() & screenSpaceRect);
 				armorBoxes.push_back(armorBox);
 			}
 			catch (cv::Exception e)

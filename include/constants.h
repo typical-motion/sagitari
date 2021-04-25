@@ -39,4 +39,4 @@ const float ARMORBOX_TEMPLATE_SIMILARITY = 0.6; // �ų����ƶȵ��ڴ
 
 const float CAMERA_FOCUS = 60;
 const float im_real_weights = 3.75;
-const double limit_angle_val = 5.0;
+const double limit_angle_val = 75;

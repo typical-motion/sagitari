@@ -4,7 +4,7 @@
 #include <iostream>
 using namespace std;
 using namespace cv;
-double angle_x_bias = 2.5, angle_y_bias = 2.5;
+double angle_x_bias = 12, angle_y_bias = 12;
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720
 

@@ -57,6 +57,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 				ArmorBox box = boxes.at(0);
 
 				SAG_TIMINGM("Tracker Intialization", tmp, 3, {
+					cv::rectangle(tmp, box.boundingRect, cv::Scalar(165, 100, 180), 1);
 					this->initializeTracker(bright, box.boundingRect);
 				})
 				// 进入追踪模式
@@ -86,7 +87,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 				{
 
 					// Tracker 结果不可信，我们需要重新查找。
-					cv::Rect nearbyRect(rect.x - rect.width / 2, rect.y - rect.height / 2, rect.width * 2, rect.height * 2);
+					cv::Rect nearbyRect(rect.x - rect.width / 2.5, rect.y - rect.height / 2.5, rect.width * 2.5, rect.height * 2.5);
 
 					if (nearbyRect.width + nearbyRect.x > input.cols)
 						nearbyRect.width = input.cols - nearbyRect.x;
@@ -99,8 +100,8 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 
 					if (nearbyRect.y < 0)
 						nearbyRect.y = 0;
-
-					cv::Mat reROI = input(nearbyRect).clone();
+					cv::Rect screenSpaceRect(0, 0, input.cols, input.rows);
+					cv::Mat reROI = input(nearbyRect & screenSpaceRect).clone();
 
 					Lightbars lightbars = this->findLightbars(reROI);
 					std::vector<ArmorBox> boxes = this->findArmorBoxes(reROI, lightbars);
@@ -108,6 +109,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 					{ // First ?
 						ArmorBox box = boxes.at(0);
 						box.relocateROI(nearbyRect.x, nearbyRect.y);
+						box.boundingRect &= screenSpaceRect;
 						// Debug here
 						{
 							box.lightbars.first.rectangle.draw(tmp);
@@ -124,6 +126,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 						this->trackingSession->update(input, rect);
 						this->aimAndFire(box);
 						// Restart Trracking to improve accuracy
+						cv::rectangle(tmp, box.boundingRect, cv::Scalar(165, 100, 180), 1);
 						this->initializeTracker(bright, box.boundingRect);
 
 						// Debug here
@@ -157,14 +160,13 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 								color_channel = channels[2];
 							}
 
-							static cv::Mat morphKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(3, 5));
+							static cv::Mat morphKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(13, 13));
 							cv::morphologyEx(color_channel, color_channel, cv::MORPH_CLOSE, morphKernel);
 							cv::morphologyEx(color_channel, color_channel, cv::MORPH_OPEN, morphKernel);
 
 							cv::findContours(color_channel(rect), contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-							// std::cout << "contours.size()" << contours.size() << std::endl;
-							// cv::imshow("KCF Rect", color_channel(rect));
-							if (contours.size() < 2 || contours.size() > 8)
+							std::cout << "contours.size()" << contours.size() << std::endl;
+							if (contours.size() < 2 || contours.size() > 6)
 							{
 								this->state = Sagitari::State::SEARCHING;
 								this->device->targetTo(0, 0, 0);
@@ -204,20 +206,29 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 
 void Sagitari::aimAndFire(const ArmorBox &box)
 {
-	this->aimAndFire(cv::Point(box.lightbars.first.rect.center + box.lightbars.second.rect.center) / 2);
+	const int MOVE_TRESHOLD = 10;
+	cv::Point2f point = cv::Point(box.lightbars.first.rect.center + box.lightbars.second.rect.center) / 2.0;
+	cv::Point2f appendVector;
+	if(this->trackingSession.pointTime < .5) {
+		this->trackingSession.pointTime = cv::getTickCount() / cv::getTickFrequency();
+		this->trackingSession.pointAt = cv::Point2f(point);
+	} else if(this->trackingSession.pointTime - (cv::getTickCount() / cv::getTickFrequency()) > 0.5) {
+		// Do the math.
+		cv::Point2f diff = this->trackingSession.pointAt - point;
+		if(diff.x > MOVE_TRESHOLD) {
+			point.x = ((point.x + box.lightbars.second.rect.center.x ) / 2.0 );
+		} else if(diff.x < -MOVE_TRESHOLD){
+			point.x = ((point.x + box.lightbars.first.rect.center.x ) / 2.0 );
+		}
+		this->trackingSession.reset();
+	}
+	cv::Point acutalTarget = point;
+	this->aimAndFire(acutalTarget);
 }
 void Sagitari::aimAndFire(const cv::Point2f &point)
 {
 	// double distance = this->getDistance(box);
-	cv::Point2f appendVector;
-	if(this->trackingSession->pointTime == 0) {
-		this->trackingSession->pointTime = cv::getTickCount() / cv::getTickFrequency();
-		this->trackingSession->pointAt = cv::Point2f(point);
-	} else if(this->trackingSession->pointTime - (cv::getTickCount() / cv::getTickFrequency()) > 1) {
-		appendVector = point - this->trackingSession->pointAt;
-		this->trackingSession->reset();
-	}
-	std::vector<double> angles = this->getAngle(point + appendVector, 0);
+	std::vector<double> angles = this->getAngle(point, 0);
 	if (angles.size() >= 2)
 	{
 		
@@ -230,8 +241,14 @@ void Sagitari::initializeTracker(const cv::Mat &src, const cv::Rect &roi)
 	cv::TrackerKCF::Params params;
 	params.resize = true;
 	this->tracker = cv::TrackerKCF::create(params);
-	this->tracker->init(src, roi);
-	this->trackingSession->reset();
+	cv::Rect screenSpaceRect(0, 0, src.cols, src.rows);
+	if(roi.width < roi.height) {
+		cv::Rect fixedRoi(roi.x, roi.y, roi.width, roi.height);
+		this->tracker->init(src, fixedRoi & screenSpaceRect);
+	} else {
+		this->tracker->init(src, roi & screenSpaceRect);
+	}
+	this->trackingSession.reset();
 }
 void Sagitari::cancelTracking()
 {
