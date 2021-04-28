@@ -3,17 +3,29 @@
 #include <opencv2/opencv.hpp>
 #include "imgproc.h"
 #include <cmath>
+#include <fstream>
+
+int getNum() {
+    std::vector<cv::String> filenames;
+    cv::glob("capture_*.yml", filenames);
+    return filenames.size();
+}
+cv::FileStorage *fs;
 
 TrackingSession::TrackingSession(Sagitari& sagitari): sagitari(sagitari) {
-
+    fs  = new cv::FileStorage("capture_" + std::to_string(getNum()) + ".yml", cv::FileStorage::WRITE);
+    *fs << "numVertices0" << "[";
+    reset();
 }
-
 void TrackingSession::reset() {
     this->pointTime = 0;
     this->vehicleBoxWidth = 0;
     this->stateFrontMostWidth = 0;
-}
+    fs  = new cv::FileStorage("capture_" + std::to_string(getNum()) + ".yml", cv::FileStorage::WRITE);
+    *fs << "numVertices0" << "[";
 
+}
+/*
 void TrackingSession::update(const cv::Mat& src, const cv::Rect& roi){
     cv::Rect screenRect(0, 0, src.cols, src.rows);
     cv::Rect expandedSearchZone(roi.x - roi.width, roi.y - roi.height * 0.5, roi.width * 3, roi.height * 2);
@@ -40,4 +52,9 @@ void TrackingSession::update(const cv::Mat& src, const cv::Rect& roi){
     cv::putText(workingZone, "armorBoxes: " + std::to_string(armorBoxes.size()), cv::Point(50, 100), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(200, 100, 210));
     this->sagitari.sendDebugImage("Possibily nearby", workingZone);
     
+}
+*/
+
+void TrackingSession::update(const cv::Mat& src, const ArmorBox& armorBox){
+    (*fs) << armorBox.numVertices[0];
 }

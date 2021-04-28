@@ -105,54 +105,10 @@ bool isLightbarPair(const Lightbar &barLeft, const Lightbar &barRight)
 	// if (!isValidBarCenter(barLeft, barRight))
 	//	return false;
 	// std::cout << "BarCenter Ok" << std::endl;
-	/*
 	if (!isValidRectRatio(barLeft, barRight))
 		return false;
 	std::cout << "RectRatio Ok" << std::endl;
-	*/
 	return true;
-}
-
-/**
- *  亮度校正
- **/
-cv::Mat gamma_correction(cv::Mat img, double gamma_c, double gamma_g)
-{
-	// get height and width
-	int width = img.cols;
-	int height = img.rows;
-	int channel = img.channels();
-
-	// output image
-	cv::Mat out = cv::Mat::zeros(height, width, CV_8UC3);
-
-	double val;
-
-	// gamma correction
-	for (int y = 0; y < height; y++)
-	{
-		for (int x = 0; x < width; x++)
-		{
-			for (int c = 0; c < channel; c++)
-			{
-				val = (double)img.at<cv::Vec3b>(y, x)[c] / 255;
-				out.at<cv::Vec3b>(y, x)[c] = (uchar)(pow(val / gamma_c, 1 / gamma_g) * 255);
-			}
-		}
-	}
-	return out;
-}
-int gamma_a = 1, gamma_b = 10;
-bool updated = false;
-cv::Mat imgShow;
-void updateGamma(int, void *)
-{
-	updated = true;
-	cv::Mat numberPic;
-	imgShow.copyTo(numberPic);
-	numberPic = gamma_correction(numberPic, gamma_a, gamma_b);
-	cv::threshold(numberPic, numberPic, 100, 255, cv::THRESH_BINARY);
-	// cv::imshow("Number", numberPic);
 }
 /**
  * 获取装甲板类型
@@ -163,6 +119,8 @@ static ArmorBox::Type getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg)
 	cv::Mat warpPerspective_mat(3, 3, CV_32FC1);
 	cv::Mat warpPerspective_src(3, 3, CV_32FC1);
 	cv::Mat warpPerspective_dst(3, 3, CV_32FC1);
+	cv::Mat demoMat;
+	srcImg.copyTo(demoMat);
 	srcImg.copyTo(warpPerspective_src);
 	cv::Point2f srcPoints[4];
 	box.roiCardRect.points(srcPoints);
@@ -181,11 +139,12 @@ static ArmorBox::Type getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg)
 	 *  0        1             1           0            0          1
 	 * 
 	 */
+	drawPoints(box.numVertices, demoMat);
+	cv::imshow("WrapZone", demoMat);
 	warpPerspective_mat = cv::getPerspectiveTransform(box.numVertices, dstPoints);
 	warpPerspective(warpPerspective_src, warpPerspective_dst, warpPerspective_mat, cv::Size(360, 360), INTER_NEAREST, BORDER_CONSTANT, Scalar(0)); //warpPerspective to get armorImage
-	imgShow = warpPerspective_dst.clone();
-	// imgShow = gamma_correction(imgShow, 0.8, 3.2);
-	gammaCorrection(imgShow, imgShow, 0.4);
+	cv::Mat imgShow = warpPerspective_dst.clone();
+	gammaCorrection(imgShow, imgShow, 0.5);
 	cv::Mat imgGray;
 	cv::cvtColor(imgShow, imgGray, cv::COLOR_BGR2GRAY);
 	cv::imshow("imgGray", imgGray);
@@ -195,14 +154,12 @@ static ArmorBox::Type getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg)
 	cv::split(imgGray, channels);
 	static cv::Mat morphKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
 
-	// This gives us the white zone.
-	// cv::bitwise_and(channels[0], channels[1], numberPic);
-	// cv::bitwise_and(numberPic, channels[2], numberPic);
-
 	cv::blur(numberPic, numberPic, cv::Size(3, 3));
 	cv::morphologyEx(numberPic, numberPic, cv::MORPH_CLOSE, morphKernel);
 	cv::morphologyEx(numberPic, numberPic, cv::MORPH_OPEN, morphKernel);
-
+	cv::Mat veryHighZone;
+	cv::threshold(numberPic, veryHighZone, 200, 255, cv::THRESH_BINARY);
+	numberPic = numberPic - veryHighZone;
 	cv::threshold(numberPic, numberPic, 20, 255, cv::THRESH_BINARY);
 	cv::imshow("Corrected", numberPic);
 
@@ -251,7 +208,7 @@ static ArmorBox::Type getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg)
 	for (auto iter = standardArmorBoxTemplate.begin(); iter != standardArmorBoxTemplate.end(); iter++)
 	{
 		double similarity = cv::matchShapes(contours[maxIndex], iter->second, cv::CONTOURS_MATCH_I1, 0);
-		if(similarity > 0.3) continue;
+		if(similarity > 0.2) continue;
 		if(similarity < minVal) {
 			minVal = similarity;
 			result = iter->first;

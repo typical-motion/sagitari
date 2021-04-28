@@ -3,9 +3,9 @@
 
 #include <opencv2/opencv.hpp>
 IODeviceProvider::IODeviceProvider() {
-	capture = cv::VideoCapture("/mnt/data/52.mp4");
+	// capture = cv::VideoCapture("/mnt/data/52.mp4");
 	// capture = cv::VideoCapture("/home/lss233/sagitari_ws/68 00_00_00-00_01_00.avi");
-	// capture = cv::VideoCapture("/home/lss233/sagitari_ws/68 00_00_00-00_01_00.avi");
+	capture = cv::VideoCapture("/home/lss233/sagitari_ws/106.avi");
 }
 IODeviceProvider::~IODeviceProvider() {
 }

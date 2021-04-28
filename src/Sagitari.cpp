@@ -47,7 +47,6 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 			// For debug only.
 			for (const auto &box : boxes)
 			{
-				// cv::rectangle(tmp, box.boundingRect, cv::Scalar(255, 0, 255), 2);
 				drawPoints(box.numVertices, tmp);
 			}
 
@@ -62,6 +61,8 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 				})
 				// 进入追踪模式
 				this->state = Sagitari::State::TRACKING;
+				this->trackingSession->reset();
+
 				this->aimAndFire(box);
 
 				std::stringstream txt;
@@ -105,10 +106,16 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 
 					Lightbars lightbars = this->findLightbars(reROI);
 					std::vector<ArmorBox> boxes = this->findArmorBoxes(reROI, lightbars);
+					for (auto &box : boxes)
+					{
+						box.relocateROI(nearbyRect.x, nearbyRect.y);
+						drawPoints(box.numVertices, tmp);
+					}
+					// For debug only.
 					if (boxes.size() > 0)
 					{ // First ?
 						ArmorBox box = boxes.at(0);
-						box.relocateROI(nearbyRect.x, nearbyRect.y);
+						// box.relocateROI(nearbyRect.x, nearbyRect.y);
 						box.boundingRect &= screenSpaceRect;
 						// Debug here
 						{
@@ -123,7 +130,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 							txt << "angle: " << box.lightbars.second.rectangle.angle();
 							cv::putText(tmp, txt.str(), box.lightbars.second.rect.boundingRect().br(), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(1, 150, 100));
 						}
-						this->trackingSession->update(input, rect);
+						this->trackingSession->update(input, box);
 						this->aimAndFire(box);
 						// Restart Trracking to improve accuracy
 						cv::rectangle(tmp, box.boundingRect, cv::Scalar(165, 100, 180), 1);
@@ -209,18 +216,18 @@ void Sagitari::aimAndFire(const ArmorBox &box)
 	const int MOVE_TRESHOLD = 10;
 	cv::Point2f point = cv::Point(box.lightbars.first.rect.center + box.lightbars.second.rect.center) / 2.0;
 	cv::Point2f appendVector;
-	if(this->trackingSession.pointTime < .5) {
-		this->trackingSession.pointTime = cv::getTickCount() / cv::getTickFrequency();
-		this->trackingSession.pointAt = cv::Point2f(point);
-	} else if(this->trackingSession.pointTime - (cv::getTickCount() / cv::getTickFrequency()) > 0.5) {
+	if(this->trackingSession->pointTime < .5) {
+		this->trackingSession->pointTime = cv::getTickCount() / cv::getTickFrequency();
+		this->trackingSession->pointAt = cv::Point2f(point);
+	} else if(this->trackingSession->pointTime - (cv::getTickCount() / cv::getTickFrequency()) > 0.5) {
 		// Do the math.
-		cv::Point2f diff = this->trackingSession.pointAt - point;
+		cv::Point2f diff = this->trackingSession->pointAt - point;
 		if(diff.x > MOVE_TRESHOLD) {
 			point.x = ((point.x + box.lightbars.second.rect.center.x ) / 2.0 );
 		} else if(diff.x < -MOVE_TRESHOLD){
 			point.x = ((point.x + box.lightbars.first.rect.center.x ) / 2.0 );
 		}
-		this->trackingSession.reset();
+		// this->trackingSession->reset();
 	}
 	cv::Point acutalTarget = point;
 	this->aimAndFire(acutalTarget);
@@ -248,7 +255,7 @@ void Sagitari::initializeTracker(const cv::Mat &src, const cv::Rect &roi)
 	} else {
 		this->tracker->init(src, roi & screenSpaceRect);
 	}
-	this->trackingSession.reset();
+	// this->trackingSession->reset();
 }
 void Sagitari::cancelTracking()
 {
