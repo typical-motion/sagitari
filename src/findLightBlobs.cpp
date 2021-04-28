@@ -88,6 +88,7 @@ Lightbars Sagitari::findLightbars(const cv::Mat &src)
 {
     cv::Mat tmp;
     src.copyTo(tmp);
+    cv::blur(src, src, cv::Size(3, 3));
 
     Lightbars light_blobs;
     cv::Mat color_channel;

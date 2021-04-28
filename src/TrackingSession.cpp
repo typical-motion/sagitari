@@ -7,22 +7,26 @@
 
 int getNum() {
     std::vector<cv::String> filenames;
-    cv::glob("capture_*.yml", filenames);
+    cv::glob("capture_x_*.csv", filenames);
     return filenames.size();
 }
-cv::FileStorage *fs;
+std::ofstream fs;
 
 TrackingSession::TrackingSession(Sagitari& sagitari): sagitari(sagitari) {
-    fs  = new cv::FileStorage("capture_" + std::to_string(getNum()) + ".yml", cv::FileStorage::WRITE);
-    *fs << "numVertices0" << "[";
+    if(fs.is_open()) {
+        fs.close();
+    }
+    fs.open("capture_x_ "+ std::to_string(getNum()) + ".csv", std::ios::out | std::ios::trunc );
     reset();
 }
 void TrackingSession::reset() {
     this->pointTime = 0;
     this->vehicleBoxWidth = 0;
     this->stateFrontMostWidth = 0;
-    fs  = new cv::FileStorage("capture_" + std::to_string(getNum()) + ".yml", cv::FileStorage::WRITE);
-    *fs << "numVertices0" << "[";
+    if(fs.is_open()) {
+        fs.close();
+    }
+    fs.open("capture_x_" + std::to_string(getNum()) + ".csv", std::ios::out | std::ios::trunc );
 
 }
 /*
@@ -56,5 +60,5 @@ void TrackingSession::update(const cv::Mat& src, const cv::Rect& roi){
 */
 
 void TrackingSession::update(const cv::Mat& src, const ArmorBox& armorBox){
-    (*fs) << armorBox.numVertices[0];
+    fs << armorBox.numVertices[0].x << ",";
 }

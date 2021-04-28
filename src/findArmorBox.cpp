@@ -5,7 +5,7 @@ using namespace cv;
 static std::map<ArmorBox::Type, std::vector<cv::Point>> loadStandardArmorBoxTemplate()
 {
 	std::map<ArmorBox::Type, std::vector<cv::Point>> map;
-	FileStorage fs("/home/lss233/armorboxContours.yml", FileStorage::READ);
+	FileStorage fs("armorboxContours.yml", FileStorage::READ);
 	FileNode fileNode = fs.root();
 	for (auto fileNodeIterator = fileNode.begin(); fileNodeIterator != fileNode.end(); fileNodeIterator++)
 	{
@@ -113,7 +113,7 @@ bool isLightbarPair(const Lightbar &barLeft, const Lightbar &barRight)
 /**
  * 获取装甲板类型
  **/
-static ArmorBox::Type getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg)
+static ArmorBox::Type getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg, Sagitari& sagitari)
 {
 	std::map<ArmorBox::Type, cv::Mat> *standardTemplate = nullptr;
 	cv::Mat warpPerspective_mat(3, 3, CV_32FC1);
@@ -140,14 +140,14 @@ static ArmorBox::Type getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg)
 	 * 
 	 */
 	drawPoints(box.numVertices, demoMat);
-	cv::imshow("WrapZone", demoMat);
+	// cv::imshow("WrapZone", demoMat);
 	warpPerspective_mat = cv::getPerspectiveTransform(box.numVertices, dstPoints);
 	warpPerspective(warpPerspective_src, warpPerspective_dst, warpPerspective_mat, cv::Size(360, 360), INTER_NEAREST, BORDER_CONSTANT, Scalar(0)); //warpPerspective to get armorImage
 	cv::Mat imgShow = warpPerspective_dst.clone();
 	gammaCorrection(imgShow, imgShow, 0.5);
 	cv::Mat imgGray;
 	cv::cvtColor(imgShow, imgGray, cv::COLOR_BGR2GRAY);
-	cv::imshow("imgGray", imgGray);
+	// cv::imshow("imgGray", imgGray);
 
 	cv::Mat numberPic = imgGray;
 	std::vector<cv::Mat> channels;
@@ -161,8 +161,8 @@ static ArmorBox::Type getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg)
 	cv::threshold(numberPic, veryHighZone, 200, 255, cv::THRESH_BINARY);
 	numberPic = numberPic - veryHighZone;
 	cv::threshold(numberPic, numberPic, 20, 255, cv::THRESH_BINARY);
-	cv::imshow("Corrected", numberPic);
-
+	// cv::imshow("Corrected", numberPic);
+	sagitari.sendDebugImage("Number", numberPic);
 	cv::Mat canny_output;
 	std::vector<std::vector<cv::Point>> contours;
 	std::vector<cv::Vec4i> hierarchy;
@@ -201,7 +201,8 @@ static ArmorBox::Type getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg)
 	Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
 	drawContours(drawing, contours, maxIndex, color, 2, 8, hierarchy, 0, Point());
 	// circle(drawing, mc, 4, color, -1, 8, 0);
-	cv::imshow("Drawing", drawing);
+	// cv::imshow("Drawing", drawing);
+	
 	double minVal = 1;
 	ArmorBox::Type result(ArmorBox::Type::UNKNOW);
 	
@@ -342,7 +343,7 @@ std::vector<ArmorBox> Sagitari::findArmorBoxes(cv::Mat &src, const Lightbars &li
 		// Color filter
 		if(box.color != this->targetColor) continue;
 		// Validate similarity.
-		ArmorBox::Type type = getArmorBoxType(box, patternImage);
+		ArmorBox::Type type = getArmorBoxType(box, patternImage, *this);
 		if (type == ArmorBox::Type::UNKNOW) continue;
 		result.push_back(box);
 	}
