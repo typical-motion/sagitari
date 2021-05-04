@@ -1,4 +1,5 @@
 #include "shape.h"
+#include "imgproc.h"
 #include <algorithm>
 #include <opencv2/opencv.hpp>
 
@@ -55,18 +56,27 @@ void Rectangle::draw(const cv::Mat &mat) const
     }
 }
 float Rectangle::width() const {
-    return sqrt(pow(this->points[0].x - this->points[1].x, 2) + pow(this->points[0].y - this->points[1].y, 2));
+    return pointLength(this->points[1], this->points[0]);
+    // return sqrt(pow(this->points[0].x - this->points[1].x, 2) + pow(this->points[0].y - this->points[1].y, 2));
     // return sqrt(pow(this->points[0].x - this->points[3].x, 2) + pow(this->points[0].y - this->points[3].y, 2));
 }
 float Rectangle::height() const {
-    return sqrt(pow(this->points[0].x - this->points[3].x, 2) + pow(this->points[0].y - this->points[3].y, 2));
+    return pointLength(this->points[2], this->points[0]);
+    // return sqrt(pow(this->points[0].x - this->points[3].x, 2) + pow(this->points[0].y - this->points[3].y, 2));
     // return sqrt(pow(this->points[0].x - this->points[1].x, 2) + pow(this->points[0].y - this->points[1].y, 2));
 }
 float Rectangle::angle() const {
-    float l = this->points[2].y - this->points[0].y;
-    float h = this->points[2].x - this->points[0].x;
-    float angle = atan(h / abs(l)) * 180 / 3.1415926;
-    if(l < 0) return angle + 90.0;
+    // float l = this->points[2].y - this->points[0].y;
+    // float h = this->points[2].x - this->points[0].x;
+    // float h = this->height();
+    // float l = pointLength(this->points[0], cv::Point(this->points[2].x, this->points[0].y));
+    float a = (pointLength(this->points[3], this->points[0]) + pointLength(this->points[2], this->points[1])) / 2;
+    float b = (pointLength(this->points[0], cv::Point(this->points[3].x, this->points[0].y)) + pointLength(this->points[1], cv::Point(this->points[2].x, this->points[1].y))) / 2;
+    float angle = acos(b / a) * 180 / 3.1415926;
+    if(this->points[3].x > this->points[0].x) {
+        return 180 - angle;
+    }
+    // if(l < 0) return angle + 90.0;
     return angle;
     
 }

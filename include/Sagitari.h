@@ -81,6 +81,7 @@ static std::unordered_map<std::string, ArmorBox::Type> const ArmorBoxTypeTable =
     {"CHARACTER_HERO", ArmorBox::Type::CHARACTER_HERO},
     {"CHARACTER_OUTPOST", ArmorBox::Type::CHARACTER_OUTPOST},
     {"CHARACTER_DRONE", ArmorBox::Type::CHARACTER_DRONE},
+	{"GARBAGE_LIGHTBAR", ArmorBox::Type::UNKNOW}
 };
 /**
  * 设备接口

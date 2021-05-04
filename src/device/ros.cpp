@@ -86,7 +86,7 @@ void ROSDeviceProvider::input(cv::Mat &mat)
 {
 }
 void ROSDeviceProvider::targetTo(double yaw, double pitch, double targe_armor_distance)
-{
+{   
     uart_process_2::uart_send send_msg;
     send_msg.xdata = -yaw;
     send_msg.ydata = pitch;

@@ -8,12 +8,14 @@ using namespace cv;
  **/
 static std::map<ArmorBox::Type, std::vector<cv::Point>> loadStandardArmorBoxTemplate()
 {
+	std::cout << "[INFO] Loading standard armorbox template..." << std::endl;
 	std::map<ArmorBox::Type, std::vector<cv::Point>> map;
-	FileStorage fs("armorboxContours.yml", FileStorage::READ);
+	FileStorage fs("./armorboxContours.yml", FileStorage::READ);
 	FileNode fileNode = fs.root();
 	for (auto fileNodeIterator = fileNode.begin(); fileNodeIterator != fileNode.end(); fileNodeIterator++)
 	{
 		FileNode numNode = *fileNodeIterator;
+		// std::cout << "[INFO] Loading standard armorbox template:" << numNode.name() <<  std::endl;
 		ArmorBox::Type type = ArmorBoxTypeTable.find(numNode.name())->second;
 		
 		FileNodeIterator it = numNode.begin(), it_end = numNode.end(); // Go through the node
@@ -30,7 +32,7 @@ static std::map<ArmorBox::Type, std::vector<cv::Point>> loadStandardArmorBoxTemp
 		}
 		map.insert(std::make_pair(type, contours));
 	}
-
+	std::cout << "[INFO] Loaded standard armorbox template." << std::endl;
 	return map;
 }
 static std::map<ArmorBox::Type, std::vector<cv::Point>> standardArmorBoxTemplate = loadStandardArmorBoxTemplate();
@@ -42,7 +44,14 @@ typedef std::pair<float, ArmorBox::Type> SimilaritySet;
  **/
 inline bool isValidAngle(const Lightbar &barLeft, const Lightbar &barRight)
 {
-	return abs(barLeft.rectangle.angle() - barRight.rectangle.angle()) < RECTS_ANGLES_TRESHOLD;
+	if(abs(barLeft.rectangle.angle() - barRight.rectangle.angle()) >= RECTS_ANGLES_TRESHOLD) {
+		return false;
+	}
+	if((barLeft.rectangle.angle() > 90 && barRight.rectangle.angle() < 90) || (barRight.rectangle.angle() > 90 && barLeft.rectangle.angle() < 90)) {
+		return false;
+	}
+	return true;
+
 }
 
 /**
@@ -58,7 +67,11 @@ inline bool isValidBarAngle(const Lightbar &bar)
  **/
 inline bool isValidBarCenter(const Lightbar &barLeft, const Lightbar &barRight)
 {
-	return abs((barLeft.rect.center - barRight.rect.center).y) < RECTS_CENTER_Y_TRESHOLD;
+	double leftYmin = std::max(barLeft.rectangle.points[0].y, barLeft.rectangle.points[1].y) + 20;
+	if(leftYmin <= barRight.rectangle.center().y) return false;
+	double rightYmin = std::max(barRight.rectangle.points[0].y, barRight.rectangle.points[1].y) + 20;
+	if(rightYmin <= barLeft.rectangle.center().y) return false;
+	return true;
 }
 /**
  * 判断装甲板的长宽比
@@ -95,6 +108,7 @@ bool isValidColor(const Lightbar& barLeft, const Lightbar& barRight) {
  **/
 int isLightbarPair(const Lightbar &barLeft, const Lightbar &barRight)
 {
+	if(barLeft.length < 15 || barRight.length < 15) return -6;
 	if(!isValidBarLength(barLeft, barRight)) return -1;
 	// std::cout << "BarLength Ok" << std::endl;
 	// std::cout << "Color Ok" << std::endl;
@@ -104,8 +118,8 @@ int isLightbarPair(const Lightbar &barLeft, const Lightbar &barRight)
 	if (!isValidAngle(barLeft, barRight))
 		return -3;
 	// std::cout << "Angle Ok" << std::endl;
-	// if (!isValidBarCenter(barLeft, barRight))
-	//	return false;
+	if (!isValidBarCenter(barLeft, barRight))
+		return -5;
 	// std::cout << "BarCenter Ok" << std::endl;
 	if (!isValidRectRatio(barLeft, barRight))
 		return -4;
@@ -153,7 +167,7 @@ static ArmorBox::Type getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg, Sagi
 	 * 
 	 */
 	drawPoints(box.numVertices, demoMat);
-	sagitari.sendDebugImage("demoMat", demoMat);
+	// sagitari.sendDebugImage("demoMat", demoMat);
 	// cv::imshow("WrapZone", demoMat);
 	warpPerspective_mat = cv::getPerspectiveTransform(box.numVertices, dstPoints);
 	// warpPerspective(warpPerspective_src, warpPerspective_dst, warpPerspective_mat, cv::Size(360, 360), INTER_NEAREST, BORDER_CONSTANT, Scalar(0)); //warpPerspective to get armorImage
@@ -252,14 +266,13 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 	std::vector<ArmorBox> armorBoxes;
 	for (int i = 0; i < lightbars.size() - 1; ++i)
 	{
-		Lightbar barLeft = lightbars.at(i);
+		const Lightbar& barLeft = lightbars.at(i);
 		// std::sort(pointsLeft, pointsLeft + 4);
 		for (int j = i + 1; j < lightbars.size(); ++j)
 		{
-			Lightbar barRight = lightbars.at(j);
+			const Lightbar& barRight = lightbars.at(j);
 
 			if(barLeft.color != barRight.color) continue;
-			
 			if (int ret = isLightbarPair(barLeft, barRight)) {
 				switch(ret) {
 					case -1:
@@ -274,7 +287,17 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 					case -4:
 						std::cout << "失败：灯条角度差值";
 					break;
+					case -6:
+						std::cout << "失败：灯条太短";
+					break;
+					case -5:
+						std::cout << "失败：灯条中心点偏差太大";
+					break;
+					default:
+						std::cout << "失败：" << ret;
+					break;
 				}
+				std::cout << std::endl;
 				continue;
 			}
 
@@ -328,6 +351,18 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 			{
 				std::swap(rectBarLeftExtend, rectBarRightExtend);
 			}
+			int ymin = std::min(rectBarLeftExtend.points[2].y, rectBarRightExtend.points[2].y);
+			int ymax = std::max(rectBarLeftExtend.points[0].y, rectBarRightExtend.points[0].y);
+			cv::line(src, cv::Point(0, ymax), cv::Point(src.cols, ymax), cv::Scalar(255, 122, 255));
+			cv::line(src, cv::Point(0, ymin), cv::Point(src.cols, ymin), cv::Scalar(122, 122, 255));
+			for(int x = 0; x < lightbars.size(); x++) {
+				const Lightbar& checkBar = lightbars.at(x);
+				if(&checkBar == &barLeft) continue;
+				if(&checkBar == &barRight) continue;
+				if(ymin <= checkBar.rectangle.center().y && checkBar.rectangle.center().y <= ymax) {
+					goto CNT;
+				}
+			}
 			try {
 				armorBox.roi = src(armorBox.boundingRect & screenSpaceRect).clone();
 				// armorBox.numVertices = {};
@@ -363,6 +398,8 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 			{
 				std::cout << "Exception" << std::endl;
 			}
+			CNT:
+			continue;
 		}
 	}
 	return armorBoxes;
@@ -383,7 +420,7 @@ std::vector<ArmorBox> Sagitari::findArmorBoxes(cv::Mat &src, const Lightbars &li
 		if(box.color != this->targetColor) continue;
 		// Validate similarity.
 		ArmorBox::Type type = getArmorBoxType(box, patternImage, *this);
-		if (type == ArmorBox::Type::UNKNOW) continue;
+		// if (type == ArmorBox::Type::UNKNOW) continue;
 		result.push_back(box);
 	}
 	std::vector<std::vector<ArmorBox>::iterator> boxesToRemove;

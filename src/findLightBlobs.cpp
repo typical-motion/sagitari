@@ -131,8 +131,8 @@ Lightbars Sagitari::findLightbars(const cv::Mat &src)
         return light_blobs; // ��������
     if (src_bin_dim.empty())
         return light_blobs;
-    this->sendDebugImage("bin_light", src_bin_light);
-    this->sendDebugImage("bin_dim", src_bin_dim);
+    // this->sendDebugImage("bin_light", src_bin_light);
+    // this->sendDebugImage("bin_dim", src_bin_dim);
 
     // ʹ��������ͬ�Ķ�ֵ����ֵͬʱ���е�����ȡ�����ٻ������նԶ�ֵ�����������Ӱ�졄1�7
     // ͬʱ�޳��ظ��ĵ������޳�������㣬���������ҳ����ĵ���ȡ�����ￄ1�7
