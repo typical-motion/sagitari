@@ -111,7 +111,7 @@ Lightbars Sagitari::findLightbars(const cv::Mat &src)
     }
     else
     {
-        light_threshold = 200;
+        light_threshold = 150;
     }
 
     cv::threshold(color_channel, src_bin_light, light_threshold, 255, cv::THRESH_BINARY); // ��ֵ����Ӧͨ��
@@ -120,17 +120,19 @@ Lightbars Sagitari::findLightbars(const cv::Mat &src)
     SAG_TIMING("Process open-close calcuation", {
         static cv::Mat morphKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(3, 5));
         static cv::Mat dilateKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(13, 13));
+        static cv::Mat dilateLightKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(1, 1));
         cv::morphologyEx(src_bin_light, src_bin_light, cv::MORPH_CLOSE, morphKernel);
         cv::morphologyEx(src_bin_light, src_bin_light, cv::MORPH_OPEN, morphKernel);
         cv::dilate(src_bin_dim, src_bin_dim, dilateKernel);
+        cv::dilate(src_bin_light, src_bin_light, dilateLightKernel);
     })
 
     if (src_bin_light.empty())
         return light_blobs; // ��������
     if (src_bin_dim.empty())
         return light_blobs;
-    // this->sendDebugImage("bin_light", src_bin_light);
-    // this->sendDebugImage("bin_dim", src_bin_dim);
+    this->sendDebugImage("bin_light", src_bin_light);
+    this->sendDebugImage("bin_dim", src_bin_dim);
 
     // ʹ��������ͬ�Ķ�ֵ����ֵͬʱ���е�����ȡ�����ٻ������նԶ�ֵ�����������Ӱ�졄1�7
     // ͬʱ�޳��ظ��ĵ������޳�������㣬���������ҳ����ĵ���ȡ�����ￄ1�7

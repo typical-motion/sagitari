@@ -18,7 +18,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 {
 	this->sendOriginalImage(input);
 	cv::Mat bright;
-	gammaCorrection(input, bright, 0.6);
+	gammaCorrection(input, bright, 0.01);
 	this->sendDebugImage("Bright", bright);
 	cv::Mat tmp = input.clone();
 	// try

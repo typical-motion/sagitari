@@ -44,6 +44,7 @@ public:
 		NUMBER_7,
 		NUMBER_8,
 		CHARACTER_SENTINEL,
+		CHARACTER_OUTPOST,
 		CHARACTER_BASE,
 		CHARACTER_HERO,
 		CHARACTER_DRONE,
@@ -58,6 +59,8 @@ public:
 	cv::Mat roi, roiCard;
 	cv::Point2f numVertices[4];
 	double score = 0;
+	bool isLarge = 0;
+	cv::Size size; // 装甲板长宽
 	ArmorBox(const cv::RotatedRect&, const IdentityColor&, const std::pair<Lightbar, Lightbar>&);
 	/**
 	 * 调整 x, y 的偏移量
@@ -76,6 +79,7 @@ static std::unordered_map<std::string, ArmorBox::Type> const ArmorBoxTypeTable =
     {"CHARACTER_BASE", ArmorBox::Type::CHARACTER_BASE},
     {"CHARACTER_SENTINEL", ArmorBox::Type::CHARACTER_SENTINEL},
     {"CHARACTER_HERO", ArmorBox::Type::CHARACTER_HERO},
+    {"CHARACTER_OUTPOST", ArmorBox::Type::CHARACTER_OUTPOST},
     {"CHARACTER_DRONE", ArmorBox::Type::CHARACTER_DRONE},
 };
 /**

@@ -2,6 +2,10 @@
 #include "imgproc.h"
 #include <opencv2/xfeatures2d.hpp>
 using namespace cv;
+
+/**
+ * 加载标准装甲板模型文件
+ **/
 static std::map<ArmorBox::Type, std::vector<cv::Point>> loadStandardArmorBoxTemplate()
 {
 	std::map<ArmorBox::Type, std::vector<cv::Point>> map;
@@ -34,12 +38,16 @@ static std::map<ArmorBox::Type, std::vector<cv::Point>> standardArmorBoxTemplate
 typedef std::pair<float, ArmorBox::Type> SimilaritySet;
 
 /**
- * 判断灯条角度
+ * 判断一对灯条角度的差值
  **/
 inline bool isValidAngle(const Lightbar &barLeft, const Lightbar &barRight)
 {
 	return abs(barLeft.rectangle.angle() - barRight.rectangle.angle()) < RECTS_ANGLES_TRESHOLD;
 }
+
+/**
+ * 判断一个灯条的角度
+ **/
 inline bool isValidBarAngle(const Lightbar &bar)
 {
 	return 45 <= bar.rectangle.angle() && bar.rectangle.angle() <= 135;
@@ -53,7 +61,7 @@ inline bool isValidBarCenter(const Lightbar &barLeft, const Lightbar &barRight)
 	return abs((barLeft.rect.center - barRight.rect.center).y) < RECTS_CENTER_Y_TRESHOLD;
 }
 /**
- * 判断灯条长宽比
+ * 判断装甲板的长宽比
  **/
 inline bool isValidRectRatio(const Lightbar &barLeft, const Lightbar &barRight)
 {
@@ -69,6 +77,10 @@ inline bool isValidRectRatio(const Lightbar &barLeft, const Lightbar &barRight)
 		(ratio >= RECTS_RATIO_ARMORBOX_BIG_LEAST &&
 		 ratio <= RECTS_RATIO_ARMORBOX_BIG_MOST));
 }
+
+/**
+ * 判断一对灯条的长度比
+ **/
 bool isValidBarLength(const Lightbar& barLeft, const Lightbar& barRight) {
 	float ratio = barLeft.length / barRight.length;
 	return 0.6 <= ratio <= 1.4;
@@ -76,45 +88,37 @@ bool isValidBarLength(const Lightbar& barLeft, const Lightbar& barRight) {
 bool isValidColor(const Lightbar& barLeft, const Lightbar& barRight) {
 	return barLeft.color == barRight.color;
 }
-/**
- * 计算中点距离
- **/
-double centerDistance(cv::Rect2d box)
-{
-	double dx = box.x - box.width / 2 - 320;
-	double dy = box.y - box.height / 2 - 240;
-	return dx * dx + dy * dy;
-}
 
 /**
  * 判断是否为一对灯条
+ * @return 返回值代表失败原因，具体含义见此处实现。
  **/
-bool isLightbarPair(const Lightbar &barLeft, const Lightbar &barRight)
+int isLightbarPair(const Lightbar &barLeft, const Lightbar &barRight)
 {
-	// if (barLeft.length < 15 || barRight.length < 15) return false;
-	if(!isValidBarLength(barLeft, barRight)) return false;
-	std::cout << "BarLength Ok" << std::endl;
-	if(!isValidColor(barLeft, barRight)) return false;
-	std::cout << "Color Ok" << std::endl;
+	if(!isValidBarLength(barLeft, barRight)) return -1;
+	// std::cout << "BarLength Ok" << std::endl;
+	// std::cout << "Color Ok" << std::endl;
 	if (!isValidBarAngle(barLeft) && !isValidBarAngle(barRight))
-		return false;
-	std::cout << "BarAngle Ok" << std::endl;
+		return -2;
+	// std::cout << "BarAngle Ok" << std::endl;
 	if (!isValidAngle(barLeft, barRight))
-		return false;
-	std::cout << "Angle Ok" << std::endl;
+		return -3;
+	// std::cout << "Angle Ok" << std::endl;
 	// if (!isValidBarCenter(barLeft, barRight))
 	//	return false;
 	// std::cout << "BarCenter Ok" << std::endl;
 	if (!isValidRectRatio(barLeft, barRight))
-		return false;
-	std::cout << "RectRatio Ok" << std::endl;
-	return true;
+		return -4;
+	// std::cout << "RectRatio Ok" << std::endl;
+	return 0;
 }
 /**
  * 获取装甲板类型
  **/
 static ArmorBox::Type getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg, Sagitari& sagitari)
 {
+	cv::Rect screenRect(0 ,0, srcImg.cols, srcImg.rows);
+	sagitari.sendDebugImage("ContextOriginal", srcImg(box.boundingRect & screenRect));
 	std::map<ArmorBox::Type, cv::Mat> *standardTemplate = nullptr;
 	cv::Mat warpPerspective_mat(3, 3, CV_32FC1);
 	cv::Mat warpPerspective_src(3, 3, CV_32FC1);
@@ -124,12 +128,21 @@ static ArmorBox::Type getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg, Sagi
 	srcImg.copyTo(warpPerspective_src);
 	cv::Point2f srcPoints[4];
 	box.roiCardRect.points(srcPoints);
+	/*
 	cv::Point2f dstPoints[4] = {
 		Point2f(360, 360),
 		Point2f(0, 360),
 		Point2f(0, 0),
 		Point2f(360, 0),
 	};
+	*/
+	cv::Point2f dstPoints[4] = {
+		Point2f(box.size.width, box.size.height),
+		Point2f(0, box.size.height),
+		Point2f(0, 0),
+		Point2f(box.size.width, 0),
+	};
+	std::cout << "box.size: " << box.size << std::endl;
 	/**
 	 *  2        3             2           3            2          3
 	 *  ----------
@@ -140,13 +153,17 @@ static ArmorBox::Type getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg, Sagi
 	 * 
 	 */
 	drawPoints(box.numVertices, demoMat);
+	sagitari.sendDebugImage("demoMat", demoMat);
 	// cv::imshow("WrapZone", demoMat);
 	warpPerspective_mat = cv::getPerspectiveTransform(box.numVertices, dstPoints);
-	warpPerspective(warpPerspective_src, warpPerspective_dst, warpPerspective_mat, cv::Size(360, 360), INTER_NEAREST, BORDER_CONSTANT, Scalar(0)); //warpPerspective to get armorImage
-	cv::Mat imgShow = warpPerspective_dst.clone();
-	gammaCorrection(imgShow, imgShow, 0.5);
+	// warpPerspective(warpPerspective_src, warpPerspective_dst, warpPerspective_mat, cv::Size(360, 360), INTER_NEAREST, BORDER_CONSTANT, Scalar(0)); //warpPerspective to get armorImage
+	warpPerspective(warpPerspective_src, warpPerspective_dst, warpPerspective_mat, box.size, INTER_NEAREST, BORDER_CONSTANT, Scalar(0)); //warpPerspective to get armorImage
+	cv::Mat imgShow;
+	// gammaCorrection(warpPerspective_dst.clone(), imgShow, 0.01);
 	cv::Mat imgGray;
-	cv::cvtColor(imgShow, imgGray, cv::COLOR_BGR2GRAY);
+	cv::cvtColor(warpPerspective_dst.clone(), imgGray, cv::COLOR_BGR2GRAY);
+	cv::equalizeHist(imgGray, imgGray);
+	sagitari.sendDebugImage("lightningCorrect", imgGray);
 	// cv::imshow("imgGray", imgGray);
 
 	cv::Mat numberPic = imgGray;
@@ -223,7 +240,6 @@ static ArmorBox::Type getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg, Sagi
 	} else {
 		return ArmorBox::Type::UNKNOW;
 	}
-	cv::imwrite("/home/lss233/result.png", numberPic);
 	return result;
 }
 
@@ -241,8 +257,26 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 		for (int j = i + 1; j < lightbars.size(); ++j)
 		{
 			Lightbar barRight = lightbars.at(j);
-			if (!isLightbarPair(barLeft, barRight))
+
+			if(barLeft.color != barRight.color) continue;
+			
+			if (int ret = isLightbarPair(barLeft, barRight)) {
+				switch(ret) {
+					case -1:
+						std::cout << "失败：灯条长度比";
+					break;
+					case -2:
+						std::cout << "失败：灯条角度";
+					break;
+					case -3:
+						std::cout << "失败：灯条角度差值";
+					break;
+					case -4:
+						std::cout << "失败：灯条角度差值";
+					break;
+				}
 				continue;
+			}
 
 			cv::RotatedRect barLeftExtend(barLeft.rect);
 			cv::RotatedRect barRightExtend(barRight.rect);
@@ -318,6 +352,11 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 				armorBox.roiCardRect = cv::RotatedRect(armorBox.rect.center, cv::Size(std::min(armorBox.rect.size.width, armorBox.rect.size.height), std::min(armorBox.rect.size.width, armorBox.rect.size.height)), barLeft.rect.angle);
 
 				armorBox.roiCard = src(armorBox.roiCardRect.boundingRect() & screenSpaceRect);
+				
+				armorBox.size = cv::Size(
+					(pointLength(armorBox.numVertices[2], armorBox.numVertices[3]) + pointLength(armorBox.numVertices[1], armorBox.numVertices[0])) / 2,
+					(pointLength(armorBox.numVertices[2], armorBox.numVertices[1]) + pointLength(armorBox.numVertices[3], armorBox.numVertices[0])) / 2
+				);
 				armorBoxes.push_back(armorBox);
 			}
 			catch (cv::Exception e)
