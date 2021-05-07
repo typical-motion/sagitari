@@ -15,23 +15,16 @@ Rectangle::Rectangle(cv::Point2f tl, cv::Point2f tr, cv::Point2f br, cv::Point2f
     } else {
         std::swap(this->points[0], this->points[1]);
     }
-    // std::swap(this->points[0], this->points[1]);
-    /*
-    if(this->points[1].x > this->points[0].x) {
-        std::swap(this->points[0], this->points[1]);
-    }
-    */
 }
 Rectangle::Rectangle(cv::RotatedRect rect) {
     rect.points(this->points);
-    std::sort(this->points, this->points + 4, [](cv::Point2f a, cv::Point2f b) { return a.y > b.y || (a.y == b.y && a.x > b.x); });
-    if(angle() >= 90.0) {
-        std::swap(this->points[2], this->points[3]);
-    } else {
-        std::swap(this->points[0], this->points[1]);
-    }
+    std::sort(this->points, this->points + 4, [](cv::Point2f a, cv::Point2f b) { return a.y > b.y; });
+
     if(this->points[0].x > this->points[1].x) {
         std::swap(this->points[0], this->points[1]);
+    }
+    if(this->points[3].x > this->points[2].x) {
+        std::swap(this->points[3], this->points[2]);
     }
 }
 
@@ -47,7 +40,6 @@ void Rectangle::draw(const cv::Mat &mat) const
 {
     for (int x = 0; x < 4; x++)
     {
-        // cv::circle(mat, this->points[x], 2, cv::Scalar(255, 100, 150));
         cv::putText(mat, std::to_string(x), this->points[x], cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(255, 255, 255));
         for (int y = 0; y < 4; y++)
         {
@@ -57,26 +49,17 @@ void Rectangle::draw(const cv::Mat &mat) const
 }
 float Rectangle::width() const {
     return pointLength(this->points[1], this->points[0]);
-    // return sqrt(pow(this->points[0].x - this->points[1].x, 2) + pow(this->points[0].y - this->points[1].y, 2));
-    // return sqrt(pow(this->points[0].x - this->points[3].x, 2) + pow(this->points[0].y - this->points[3].y, 2));
 }
 float Rectangle::height() const {
     return pointLength(this->points[2], this->points[0]);
-    // return sqrt(pow(this->points[0].x - this->points[3].x, 2) + pow(this->points[0].y - this->points[3].y, 2));
-    // return sqrt(pow(this->points[0].x - this->points[1].x, 2) + pow(this->points[0].y - this->points[1].y, 2));
 }
 float Rectangle::angle() const {
-    // float l = this->points[2].y - this->points[0].y;
-    // float h = this->points[2].x - this->points[0].x;
-    // float h = this->height();
-    // float l = pointLength(this->points[0], cv::Point(this->points[2].x, this->points[0].y));
     float a = (pointLength(this->points[3], this->points[0]) + pointLength(this->points[2], this->points[1])) / 2;
     float b = (pointLength(this->points[0], cv::Point(this->points[3].x, this->points[0].y)) + pointLength(this->points[1], cv::Point(this->points[2].x, this->points[1].y))) / 2;
     float angle = acos(b / a) * 180 / 3.1415926;
     if(this->points[3].x > this->points[0].x) {
         return 180 - angle;
     }
-    // if(l < 0) return angle + 90.0;
     return angle;
     
 }
