@@ -67,10 +67,14 @@ inline bool isValidBarAngle(const Lightbar &bar)
  **/
 inline bool isValidBarCenter(const Lightbar &barLeft, const Lightbar &barRight)
 {
-	double leftYmin = std::max(barLeft.rectangle.points[0].y, barLeft.rectangle.points[1].y) + 20;
-	if(leftYmin <= barRight.rectangle.center().y) return false;
-	double rightYmin = std::max(barRight.rectangle.points[0].y, barRight.rectangle.points[1].y) + 20;
-	if(rightYmin <= barLeft.rectangle.center().y) return false;
+	double leftYTop 	= std::min(barLeft.rectangle.points[2].y, barLeft.rectangle.points[3].y) - 20;
+	double leftYBottom  = std::max(barLeft.rectangle.points[0].y, barLeft.rectangle.points[1].y) + 20;
+
+	double rightYTop 	= std::min(barRight.rectangle.points[2].y, barRight.rectangle.points[3].y) - 20;
+	double rightYBottom  = std::max(barRight.rectangle.points[0].y, barRight.rectangle.points[1].y) + 20;
+
+	if(!(leftYTop <= barRight.rectangle.center().y && barRight.rectangle.center().y <= leftYBottom) &&
+	   !(rightYTop <= barLeft.rectangle.center().y && barLeft.rectangle.center().y <= rightYBottom)) return false;
 	return true;
 }
 /**
@@ -108,21 +112,17 @@ bool isValidColor(const Lightbar& barLeft, const Lightbar& barRight) {
  **/
 int isLightbarPair(const Lightbar &barLeft, const Lightbar &barRight)
 {
-	if(barLeft.length < 15 || barRight.length < 15) return -6;
+	// if(barLeft.length < 15 || barRight.length < 15) return -6;
 	if(!isValidBarLength(barLeft, barRight)) return -1;
 	// std::cout << "BarLength Ok" << std::endl;
 	// std::cout << "Color Ok" << std::endl;
-	if (!isValidBarAngle(barLeft) && !isValidBarAngle(barRight))
-		return -2;
+	if (!isValidBarAngle(barLeft) && !isValidBarAngle(barRight)) return -2;
 	// std::cout << "BarAngle Ok" << std::endl;
-	if (!isValidAngle(barLeft, barRight))
-		return -3;
+	if (!isValidAngle(barLeft, barRight)) return -3;
 	// std::cout << "Angle Ok" << std::endl;
-	if (!isValidBarCenter(barLeft, barRight))
-		return -5;
+	if (!isValidBarCenter(barLeft, barRight)) return -5;
 	// std::cout << "BarCenter Ok" << std::endl;
-	if (!isValidRectRatio(barLeft, barRight))
-		return -4;
+	if (!isValidRectRatio(barLeft, barRight))	return -4;
 	// std::cout << "RectRatio Ok" << std::endl;
 	return 0;
 }
@@ -141,7 +141,8 @@ static ArmorBox::Type getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg, Sagi
 	srcImg.copyTo(demoMat);
 	srcImg.copyTo(warpPerspective_src);
 	cv::Point2f srcPoints[4];
-	box.roiCardRect.points(srcPoints);
+	for(int i = 0; i < 4; i++) srcPoints[i] = box.numVertices[i];
+	// box.rect.points(srcPoints);
 	/*
 	cv::Point2f dstPoints[4] = {
 		Point2f(360, 360),
@@ -156,7 +157,6 @@ static ArmorBox::Type getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg, Sagi
 		Point2f(0, 0),
 		Point2f(box.size.width, 0),
 	};
-	std::cout << "box.size: " << box.size << std::endl;
 	/**
 	 *  2        3             2           3            2          3
 	 *  ----------
@@ -231,8 +231,6 @@ static ArmorBox::Type getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg, Sagi
 	
 	Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
 	drawContours(drawing, contours, maxIndex, color, 2, 8, hierarchy, 0, Point());
-	// circle(drawing, mc, 4, color, -1, 8, 0);
-	// cv::imshow("Drawing", drawing);
 	
 	double minVal = 1;
 	ArmorBox::Type result(ArmorBox::Type::UNKNOW);
@@ -267,7 +265,6 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 	for (int i = 0; i < lightbars.size() - 1; ++i)
 	{
 		const Lightbar& barLeft = lightbars.at(i);
-		// std::sort(pointsLeft, pointsLeft + 4);
 		for (int j = i + 1; j < lightbars.size(); ++j)
 		{
 			const Lightbar& barRight = lightbars.at(j);
@@ -285,7 +282,7 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 						std::cout << "失败：灯条角度差值";
 					break;
 					case -4:
-						std::cout << "失败：灯条角度差值";
+						std::cout << "失败：装甲板长宽比";
 					break;
 					case -6:
 						std::cout << "失败：灯条太短";
@@ -307,10 +304,6 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 			cv::Rect2d rect_left = barLeft.boundingRect;
 			cv::Rect2d rect_right = barRight.boundingRect;
 
-			if (rect_left.x > rect_right.x)
-			{
-				std::swap(rect_left, rect_right);
-			}
 			if(barLeftExtend.angle < -60) {
 				barLeftExtend.size.width *= 2.5;
 			} else {
@@ -324,41 +317,18 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 
 			cv::Point topLeft = rect_left.tl();
 			cv::Point bottomRight = rect_right.br();
-
-			double min_x, min_y, max_x, max_y;
-			min_x = fmin(rect_left.x, rect_right.x) - 4;
-			max_x = fmax(rect_left.x + rect_left.width, rect_right.x + rect_right.width) + 4;
-			min_y = fmin(rect_left.y, rect_right.y) - 0.5 * (rect_left.height + rect_right.height) / 2.0;
-			max_y = fmax(rect_left.y + rect_left.height, rect_right.y + rect_right.height) +
-					0.5 * (rect_left.height + rect_right.height) / 2.0;
-			
-			if (min_x < 0 || max_x > src.cols || min_y < 0 || max_y > src.rows)
-			{
-				continue;
-			}
-			// if (state == Sagitari::State::SEARCHING && (max_y + min_y) / 2 < 120) continue;
-			
-			if ((max_x - min_x) / (max_y - min_y) < 0.8)
-				continue;
 			
 			Lightbars pair_blobs = {lightbars.at(i), lightbars.at(j)};
-			ArmorBox armorBox(cv::RotatedRect(cv::Point((max_x + min_x) / 2, (max_y + min_y) / 2), cv::Size(max_x - min_x, max_y - min_y), barLeft.rect.angle), barLeft.color, std::make_pair(barLeft, barRight));
+			ArmorBox armorBox(barLeft.color, std::make_pair(barLeft, barRight));
 
 			Rectangle rectBarLeftExtend(barLeftExtend);
 			Rectangle rectBarRightExtend(barRightExtend);
 
-			if (rectBarLeftExtend.center().x > rectBarRightExtend.center().x)
-			{
-				std::swap(rectBarLeftExtend, rectBarRightExtend);
-			}
 			int ymin = std::min(rectBarLeftExtend.points[2].y, rectBarRightExtend.points[2].y);
 			int ymax = std::max(rectBarLeftExtend.points[0].y, rectBarRightExtend.points[0].y);
-			cv::line(src, cv::Point(0, ymax), cv::Point(src.cols, ymax), cv::Scalar(255, 122, 255));
-			cv::line(src, cv::Point(0, ymin), cv::Point(src.cols, ymin), cv::Scalar(122, 122, 255));
-			for(int x = 0; x < lightbars.size(); x++) {
+
+			for(int x = i + 1; x < j; x++) {
 				const Lightbar& checkBar = lightbars.at(x);
-				if(&checkBar == &barLeft) continue;
-				if(&checkBar == &barRight) continue;
 				if(ymin <= checkBar.rectangle.center().y && checkBar.rectangle.center().y <= ymax) {
 					goto CNT;
 				}
@@ -378,28 +348,36 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 
 				armorBox.numVertices[0] = rectBarRightExtend.points[0];
 				armorBox.numVertices[1] = rectBarLeftExtend.points[1];
-				armorBox.numVertices[2] = rectBarLeftExtend.points[3];
-				armorBox.numVertices[3] = rectBarRightExtend.points[2];
-				rectBarRightExtend.draw(src);
-				rectBarLeftExtend.draw(src);
-				// cv::imshow("matchArmorBoxes", src);
+				armorBox.numVertices[2] = rectBarLeftExtend.points[2];
+				armorBox.numVertices[3] = rectBarRightExtend.points[3];
+				// rectBarRightExtend.draw(src);
 				// rectBarLeftExtend.draw(src);
-				armorBox.roiCardRect = cv::RotatedRect(armorBox.rect.center, cv::Size(std::min(armorBox.rect.size.width, armorBox.rect.size.height), std::min(armorBox.rect.size.width, armorBox.rect.size.height)), barLeft.rect.angle);
+				// rectBarLeftExtend.draw(src);
+				armorBox.rect = cv::RotatedRect(armorBox.rect.center, cv::Size(std::min(armorBox.rect.size.width, armorBox.rect.size.height), std::min(armorBox.rect.size.width, armorBox.rect.size.height)), barLeft.rect.angle);
 
-				armorBox.roiCard = src(armorBox.roiCardRect.boundingRect() & screenSpaceRect);
+				armorBox.roiCard = src(armorBox.rect.boundingRect() & screenSpaceRect);
 				
 				armorBox.size = cv::Size(
 					(pointLength(armorBox.numVertices[2], armorBox.numVertices[3]) + pointLength(armorBox.numVertices[1], armorBox.numVertices[0])) / 2,
 					(pointLength(armorBox.numVertices[2], armorBox.numVertices[1]) + pointLength(armorBox.numVertices[3], armorBox.numVertices[0])) / 2
 				);
+				cv::Point center = (armorBox.numVertices[0] + armorBox.numVertices[1] + armorBox.numVertices[2] + armorBox.numVertices[3]) / 4;
+				armorBox.boundingRect.x = center.x - armorBox.size.width / 2 - rectBarLeftExtend.width() / 2  - rectBarRightExtend.width() / 2;
+				armorBox.boundingRect.y = center.y - armorBox.size.height / 2;
+				armorBox.boundingRect.width = armorBox.size.width + rectBarLeftExtend.width() + rectBarRightExtend.width();
+				armorBox.boundingRect.height = armorBox.size.height;
+				armorBox.boundingRect.x-=4;
+				armorBox.boundingRect.y-=4;
+				armorBox.boundingRect.width+=8;
+				armorBox.boundingRect.height+=8;
+
 				armorBoxes.push_back(armorBox);
 			}
 			catch (cv::Exception e)
 			{
 				std::cout << "Exception" << std::endl;
 			}
-			CNT:
-			continue;
+			CNT:; // continue;
 		}
 	}
 	return armorBoxes;
@@ -414,13 +392,14 @@ std::vector<ArmorBox> Sagitari::findArmorBoxes(cv::Mat &src, const Lightbars &li
 	cv::Mat patternImage;
 	src.copyTo(patternImage);
 	std::vector<ArmorBox> result;
-	for (const ArmorBox &box : matchArmorBoxes(src, lightbars))
+	for (ArmorBox &box : matchArmorBoxes(src, lightbars))
 	{
 		// Color filter
 		if(box.color != this->targetColor) continue;
 		// Validate similarity.
 		ArmorBox::Type type = getArmorBoxType(box, patternImage, *this);
 		// if (type == ArmorBox::Type::UNKNOW) continue;
+		box.updateScore();
 		result.push_back(box);
 	}
 	std::vector<std::vector<ArmorBox>::iterator> boxesToRemove;

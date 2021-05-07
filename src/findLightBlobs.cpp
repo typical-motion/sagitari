@@ -50,11 +50,13 @@ static bool isValidLightBlob(const std::vector<cv::Point> &contour, const cv::Ro
         cv::putText(mask, "angle: " + std::to_string(rectangle.angle()), rect.boundingRect().tl(), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(100, 180, 200));
         return false;
     }
+    if(std::max(rect.size.height, rect.size.width) < 14) return false;
     //TODO 根据长度分档
-    if (!(2.8 <= rectangle.ratio() && rectangle.ratio() <= 10))
+    if (!(2. < rectangle.ratio() && rectangle.ratio() <= 15))
     {
         cv::rectangle(mask, rect.boundingRect(), cv::Scalar(180, 100, 200));
         rectangle.draw(mask);
+        std::cout << "ratio: " << std::to_string(rectangle.ratio()) << std::endl;
         cv::putText(mask, "ratio: " + std::to_string(rectangle.ratio()), rect.boundingRect().tl(), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(100, 180, 200));
         return false;
     }
@@ -63,8 +65,8 @@ static bool isValidLightBlob(const std::vector<cv::Point> &contour, const cv::Ro
 }
 static bool isSameBlob(Lightbar barLeft, Lightbar barRight)
 {
-    auto dist = barLeft.rect.center - barRight.rect.center;
-    return (dist.x * dist.x + dist.y * dist.y) < 9;
+    auto dist = barLeft.rectangle.center() - barRight.rectangle.center();
+    return (dist.x * dist.x + dist.y * dist.y) < 16;
 }
 cv::Mat hsvFilter(const cv::Mat &src, IdentityColor mode)
 {
@@ -78,8 +80,8 @@ cv::Mat hsvFilter(const cv::Mat &src, IdentityColor mode)
     }
     else if (mode == IdentityColor::IDENTITY_RED)
     {
-        static cv::Scalar redLowerb = cv::Scalar(0, 65, 240);
-        static cv::Scalar redUpperb = cv::Scalar(15, 255, 255);
+        static cv::Scalar redLowerb = cv::Scalar(0, 50, 160);
+        static cv::Scalar redUpperb = cv::Scalar(20, 255, 255);
         cv::inRange(outImage, redLowerb, redUpperb, outImage);
     }
     return outImage;
@@ -92,7 +94,6 @@ Lightbars Sagitari::findLightbars(const cv::Mat &src)
 
     Lightbars light_blobs;
     cv::Mat color_channel;
-    cv::Mat src_bin_light, src_bin_dim;
     std::vector<cv::Mat> channels;
     cv::split(src, channels);
     if (this->targetColor == IdentityColor::IDENTITY_BLUE)
@@ -114,25 +115,25 @@ Lightbars Sagitari::findLightbars(const cv::Mat &src)
         light_threshold = 150;
     }
 
-    cv::threshold(color_channel, src_bin_light, light_threshold, 255, cv::THRESH_BINARY); // ��ֵ����Ӧͨ��
-    // cv::threshold(color_channel, src_bin_dim, 140, 255, cv::THRESH_BINARY); // ��ֵ����Ӧͨ��
-    src_bin_dim = hsvFilter(src, this->targetColor);
+    cv::threshold(color_channel, this->rbgBinImage, light_threshold, 255, cv::THRESH_BINARY); // ��ֵ����Ӧͨ��
+    // cv::threshold(color_channel, this->hsvBinImage, 140, 255, cv::THRESH_BINARY); // ��ֵ����Ӧͨ��
+    this->hsvBinImage = hsvFilter(src, this->targetColor);
     SAG_TIMING("Process open-close calcuation", {
         static cv::Mat morphKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(3, 5));
         static cv::Mat dilateKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(13, 13));
         static cv::Mat dilateLightKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(1, 1));
-        cv::morphologyEx(src_bin_light, src_bin_light, cv::MORPH_CLOSE, morphKernel);
-        cv::morphologyEx(src_bin_light, src_bin_light, cv::MORPH_OPEN, morphKernel);
-        cv::dilate(src_bin_dim, src_bin_dim, dilateKernel);
-        cv::dilate(src_bin_light, src_bin_light, dilateLightKernel);
+        cv::morphologyEx(this->rbgBinImage, this->rbgBinImage, cv::MORPH_CLOSE, morphKernel);
+        cv::morphologyEx(this->rbgBinImage, this->rbgBinImage, cv::MORPH_OPEN, morphKernel);
+        cv::dilate(this->hsvBinImage, this->hsvBinImage, dilateKernel);
+        cv::dilate(this->rbgBinImage, this->rbgBinImage, dilateLightKernel);
     })
 
-    if (src_bin_light.empty())
+    if (this->rbgBinImage.empty())
         return light_blobs; // ��������
-    if (src_bin_dim.empty())
+    if (this->hsvBinImage.empty())
         return light_blobs;
-    // this->sendDebugImage("bin_light", src_bin_light);
-    // this->sendDebugImage("bin_dim", src_bin_dim);
+    this->sendDebugImage("bin_light", this->rbgBinImage);
+    this->sendDebugImage("bin_dim", this->hsvBinImage);
 
     // ʹ��������ͬ�Ķ�ֵ����ֵͬʱ���е�����ȡ�����ٻ������նԶ�ֵ�����������Ӱ�졄1�7
     // ͬʱ�޳��ظ��ĵ������޳�������㣬���������ҳ����ĵ���ȡ�����ￄ1�7
@@ -140,11 +141,13 @@ Lightbars Sagitari::findLightbars(const cv::Mat &src)
     Lightbars light_blobs_light, light_blobs_dim;
     std::vector<cv::Vec4i> hierarchy_light, hierarchy_dim;
 
-    cv::findContours(src_bin_light, light_contours_light, hierarchy_light, cv::RETR_TREE, cv::CHAIN_APPROX_NONE);
-    cv::findContours(src_bin_dim, light_contours_dim, hierarchy_dim, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
+    cv::findContours(this->rbgBinImage, light_contours_light, hierarchy_light, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+    cv::findContours(this->hsvBinImage, light_contours_dim, hierarchy_dim, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+
     SAG_TIMING("Process light contours", {
         for (int i = 0; i < light_contours_light.size(); i++)
         {
+            /*
             if (hierarchy_light[i][2] == -1)
             {
                 cv::RotatedRect rect = cv::minAreaRect(light_contours_light[i]);
@@ -154,12 +157,20 @@ Lightbars Sagitari::findLightbars(const cv::Mat &src)
                         rect, get_blob_color(src, rect));
                 }
             }
+            */
+           cv::RotatedRect rect = cv::minAreaRect(light_contours_light[i]);
+                if (isValidLightBlob(light_contours_light[i], rect, tmp))
+                {
+                    light_blobs_light.emplace_back(
+                        rect, get_blob_color(src, rect));
+                }
         }
     })
 
     SAG_TIMING("Process dim contours", {
         for (int i = 0; i < light_contours_dim.size(); i++)
         {
+            /*
             if (hierarchy_dim[i][2] == -1)
             {
                 cv::RotatedRect rect = cv::minAreaRect(light_contours_dim[i]);
@@ -168,9 +179,16 @@ Lightbars Sagitari::findLightbars(const cv::Mat &src)
                     light_blobs_dim.emplace_back(
                         rect, get_blob_color(src, rect));
                 }
-            }
+            }*/
+            cv::RotatedRect rect = cv::minAreaRect(light_contours_dim[i]);
+                if (isValidLightBlob(light_contours_dim[i], rect, tmp))
+                {
+                    light_blobs_dim.emplace_back(
+                        rect, get_blob_color(src, rect));
+                }
         }
     })
+    Lightbars resultLightbars;
     SAG_TIMING("Remove duplicated contours", {
         std ::vector<int> light_to_remove, dim_to_remove;
         for (int l = 0; l != light_blobs_light.size(); l++)
@@ -179,6 +197,9 @@ Lightbars Sagitari::findLightbars(const cv::Mat &src)
             {
                 if (isSameBlob(light_blobs_light[l], light_blobs_dim[d]))
                 {
+                    dim_to_remove.emplace_back(d);
+                    resultLightbars.emplace_back(light_blobs_light[l]);
+                    /*
                     if (light_blobs_light[l].aspectRatio > light_blobs_dim[d].aspectRatio)
                     {
                         dim_to_remove.emplace_back(d);
@@ -190,6 +211,7 @@ Lightbars Sagitari::findLightbars(const cv::Mat &src)
                         // resultLightbars.emplace_back(light_blobs_light[l]);
                         // light_to_remove.emplace_back(l);
                     }
+                    */
                     break;
                 }
             }
@@ -214,6 +236,8 @@ Lightbars Sagitari::findLightbars(const cv::Mat &src)
         }
     })
     // this->sendDebugImage("FindLightBlobs", tmp);
-    sort(light_blobs.begin(), light_blobs.end(), [](Lightbar a, Lightbar b) { return a.rect.center.x > b.rect.center.x; });
-    return light_blobs;
+    sort(light_blobs.begin(), light_blobs.end(), [](Lightbar a, Lightbar b) { return a.rect.center.x < b.rect.center.x; });
+    sort(resultLightbars.begin(), resultLightbars.end(), [](Lightbar a, Lightbar b) { return a.rect.center.x < b.rect.center.x; });
+    return resultLightbars;
+    // return light_blobs;
 }

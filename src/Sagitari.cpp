@@ -18,9 +18,10 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 {
 	this->sendOriginalImage(input);
 	cv::Mat bright;
-	gammaCorrection(input, bright, 0.01);
+	gammaCorrection(input, bright, 0.4);
 	this->sendDebugImage("Bright", bright);
 	cv::Mat tmp = input.clone();
+	cv::Rect screenSpaceRect(0, 0, input.cols, input.rows);
 	// try
 	{
 		if (this->state == Sagitari::State::SEARCHING)
@@ -88,21 +89,17 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 				{
 
 					// Tracker 结果不可信，我们需要重新查找。
-					cv::Rect nearbyRect(rect.x - rect.width / 2.5, rect.y - rect.height / 2.5, rect.width * 2.5, rect.height * 2.5);
+					const float resizeFactor = 1.56;
+					cv::Point nearbyRectCenter = (rect.tl() + rect.br()) / 2;
+					cv::Rect nearbyRect(rect);
+					nearbyRect.width *= resizeFactor;
+					nearbyRect.height *= resizeFactor;
+					nearbyRect.x = nearbyRectCenter.x - nearbyRect.width / 2;
+					nearbyRect.y = nearbyRectCenter.y - nearbyRect.height / 2;
 
-					if (nearbyRect.width + nearbyRect.x > input.cols)
-						nearbyRect.width = input.cols - nearbyRect.x;
-
-					if (nearbyRect.height + nearbyRect.y > input.rows)
-						nearbyRect.height = input.rows - nearbyRect.y;
-
-					if (nearbyRect.x < 0)
-						nearbyRect.x = 0;
-
-					if (nearbyRect.y < 0)
-						nearbyRect.y = 0;
-					cv::Rect screenSpaceRect(0, 0, input.cols, input.rows);
-					cv::Mat reROI = input(nearbyRect & screenSpaceRect).clone();
+					
+					nearbyRect &= screenSpaceRect;
+					cv::Mat reROI = input(nearbyRect).clone();
 
 					Lightbars lightbars = this->findLightbars(reROI);
 					std::vector<ArmorBox> boxes = this->findArmorBoxes(reROI, lightbars);
@@ -137,7 +134,6 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 						this->initializeTracker(bright, box.boundingRect);
 
 						// Debug here
-						drawPoints(box.numVertices, tmp);
 						std::stringstream txt;
 						std::vector<double> angles = this->getAngle(cv::Point(box.lightbars.first.rect.center + box.lightbars.second.rect.center) / 2, this->getDistance(box));
 						if (angles.size() >= 2)
@@ -148,33 +144,17 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 					}
 					else
 					{ // Tracking failed.
-						// this->state = Sagitari::State::SEARCHING;
 						try
 						{
-							std::vector<cv::Mat> channels;
-							cv::split(input, channels);
-							cv::Mat elem = channels.at(0);
-							int count = cv::countNonZero(elem(rect));
-							std::vector<std::vector<cv::Point>> contours;
-							cv::Mat color_channel;
-							cv::split(input, channels);
-							if (this->targetColor == IdentityColor::IDENTITY_BLUE)
+							if (lightbars.size() < 2 || lightbars.size() > 4)
 							{
-								color_channel = channels[0];
-							}
-							else if (this->targetColor == IdentityColor::IDENTITY_RED)
-							{
-								color_channel = channels[2];
-							}
-
-							static cv::Mat morphKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(13, 13));
-							cv::morphologyEx(color_channel, color_channel, cv::MORPH_CLOSE, morphKernel);
-							cv::morphologyEx(color_channel, color_channel, cv::MORPH_OPEN, morphKernel);
-
-							cv::findContours(color_channel(rect), contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-							std::cout << "contours.size()" << contours.size() << std::endl;
-							if (contours.size() < 2 || contours.size() > 6)
-							{
+								/*
+								cv::Mat failed;
+								cv::hconcat(this->rbgBinImage, this->hsvBinImage, failed);
+								this->sendDebugImage("Tracking failed With lightbar", failed);
+								std::cout << "lightbars.size() " << lightbars.size() << std::endl;
+								exit(1);
+								*/
 								this->state = Sagitari::State::SEARCHING;
 								this->device->targetTo(0, 0, 0);
 							}
@@ -187,6 +167,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 						}
 						catch (cv::Exception e)
 						{
+							this->sendDebugImage("Tracking failed Exception", this->rbgBinImage);
 							this->state = Sagitari::State::SEARCHING;
 							this->device->targetTo(0, 0, 0);
 						}
@@ -195,9 +176,10 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 				}
 				else
 				{
+					this->sendDebugImage("Tracking failed Tracker", this->rbgBinImage);
 					this->state = Sagitari::State::SEARCHING;
 					this->device->targetTo(0, 0, 0);
-					// 跟踪似乎失败了。
+					// 目标离开视野
 				}
 			})
 		}
