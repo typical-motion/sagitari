@@ -51,7 +51,7 @@ public:
 		UNKNOW
 	};
 
-	cv::RotatedRect rect, roiCardRect;
+	cv::RotatedRect rect;
 	cv::Rect boundingRect;
 	std::pair<Lightbar, Lightbar> lightbars;
 	IdentityColor color;
@@ -61,11 +61,13 @@ public:
 	double score = 0;
 	bool isLarge = 0;
 	cv::Size size; // 装甲板长宽
-	ArmorBox(const cv::RotatedRect&, const IdentityColor&, const std::pair<Lightbar, Lightbar>&);
+	ArmorBox(const IdentityColor&, const std::pair<Lightbar, Lightbar>&);
 	/**
 	 * 调整 x, y 的偏移量
 	 **/
 	void relocateROI(float x, float y);
+
+	void updateScore();
 };
 static std::unordered_map<std::string, ArmorBox::Type> const ArmorBoxTypeTable = {
     {"NUMBER_1", ArmorBox::Type::NUMBER_1},
@@ -128,6 +130,9 @@ private:
 	IdentityColor targetColor;				// 目标颜色
 	State state;							// 射手状态
 	cv::Ptr<cv::Tracker> tracker;			// 追踪器
+
+	cv::Mat hsvBinImage;					// HSV预处理二值图
+	cv::Mat rbgBinImage;					// RBG预处理二值图
 	
 
 	void initializeTracker(const cv::Mat& src, const cv::Rect& roi); // 初始化追踪器

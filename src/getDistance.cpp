@@ -35,7 +35,7 @@ double Sagitari::getDistance(ArmorBox box)
     {
         point_get_[i] = box.numVertices[i];
     }
-    // box.roiCardRect.points(point_get_);
+    // box.rect.points(point_get_);
     
     int sequence_x = 0;
     for (size_t i = 1; i < 4; i++)
@@ -65,7 +65,7 @@ double Sagitari::getDistance(ArmorBox box)
     tvec.at<double>(1, 0) = -tvec.at<double>(1, 0);
     realistic_distance = pow(pow(tvec.at<double>(0, 0), 2) + pow(tvec.at<double>(1, 0), 2) + pow(tvec.at<double>(2, 0), 2), 0.5);
     // coordinate << tvec.at<double>(0, 0), tvec.at<double>(1, 0), tvec.at<double>(2, 0);
-    im_real_weights = real_distance_height / box.roiCardRect.size.height;
+    im_real_weights = real_distance_height / box.rect.size.height;
     return realistic_distance;
 }
     /*
