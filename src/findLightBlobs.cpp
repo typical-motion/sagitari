@@ -31,7 +31,7 @@ static IdentityColor get_blob_color(const cv::Mat &src, const cv::RotatedRect &b
     }
     else
     {
-        return IdentityColor::IDENTITY_RED;
+        return IdentityColor::IDENTITY_BLUE;
     }
 }
 // �������������С��Ӿ������֮�ￄ1�7
