@@ -2,51 +2,40 @@
 #include <ros/ros.h>
 #include <opencv2/core/utility.hpp>
 #include <sagitari_debug/sagitari_img_debug.h>
+#include <cv_bridge/cv_bridge.h>
+#include <uart_process_2/uart_send.h>
+#include "clearscreen.h"
+
+Sagitari sagitari(IdentityColor::IDENTITY_RED);
+
+void onCameraRawImageReceived(const sensor_msgs::ImageConstPtr &msg) {
+	sagitari << cv_bridge::toCvCopy(msg, "bgr8")->image;
+	clearScreen();	
+}
+void onUartMessageReceived(const uart_process_2::uart_receive &msg) {
+	sagitari.update(msg);
+}
 int main(int argc, char *argv[])
 {
 	ros::init(argc, argv, "sagitari");
 
-	const cv::String keys =
-		"{help h usage ? |      | print this message   }"
-		"{usecam         |0     | Whether to use camera}";
-	cv::CommandLineParser parser(argc, argv, keys);
+	ros::NodeHandle nh;
+	image_transport::ImageTransport it(nh);
 
-	DeviceProvider *device;
-	if (parser.has("help"))
+	image_transport::Subscriber cameraRawImageSubscriber 
+									= it.subscribe("DahuaCamera/LowDims", 1, onCameraRawImageReceived);
+	sagitari.originalImagePublisher = it.advertise("Sagitari/originalImage", 1);
+
+	ros::Subscriber uartMessageSubsriber 
+									= nh.subscribe("uart_receive", 1, onUartMessageReceived);			//接收串口模式
+	sagitari.uartPublisher		 	= nh.advertise<uart_process_2::uart_send>("uart_send", 1); 			//初始化发送串口话题
+	sagitari.debugImagePublisher 	= nh.advertise<sagitari_debug::sagitari_img_debug>("Sagitari/debugImage", 1);
+	
+	ros::Rate rate(30);
+	while (ros::ok())
 	{
-		parser.printMessage();
-		return 0;
-	}
-	Sagitari sagitari(IdentityColor::IDENTITY_RED, device);
-	if (parser.get<int>("usecam"))
-	{
-		device = new ROSDeviceProvider(&sagitari);
-		sagitari.device = device;
-	}
-	else
-	{
-		ros::NodeHandle nh;
-		image_transport::ImageTransport it(nh); 
-		sagitari.debugImagePublisher = nh.advertise<sagitari_debug::sagitari_img_debug>("Sagitari/debugImage", 1);
-		sagitari.originalImagePublisher = it.advertise("Sagitari/originalImage", 1);
-		device = new IODeviceProvider();
-		sagitari.device = device;
-		cv::Mat target;
-		while (ros::ok())
-		{
-			*device >> target;
-			sagitari << target;
-			cv::imshow("target", target);
-			int key = cv::waitKey(10);
-			if (key == 'q')
-			{
-				break;
-			}
-			else if (key == 'p')
-			{
-				cv::waitKey(0);
-			}
-		}
+		ros::spinOnce();
+		rate.sleep();
 	}
 
 	return 0;

@@ -12,6 +12,7 @@ void Sagitari::sendDebugImage(const cv::String& title, const cv::Mat& mat) {
 	sensor_msgs::ImagePtr image = cv_bridge::CvImage(header, "bgr8", toMat).toImageMsg();
     sagitari_debug::sagitari_img_debug msg;
     msg.title = title;
+    if(msg.title != "binImage" && msg.title != "Tracking") return;
     msg.image = *image;
 	this->debugImagePublisher.publish(msg);
 }

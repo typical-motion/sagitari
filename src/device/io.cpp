@@ -13,7 +13,10 @@ IODeviceProvider::~IODeviceProvider() {
 void IODeviceProvider::input(cv::Mat& mat) {
     clearScreen();
 	capture >> mat;
-	// mat = cv::imread("/home/lss233/sagitari_ws/2021-04-11_22_25_17_174.bmp");
+	if(cv::waitKey(10) == 'p') {
+		cv::waitKey(0);
+	}
+	// mat = cv::imread("/home/lss233/sagitari_ws/fps_425.jpg");
 }
 void IODeviceProvider::targetTo(double yaw, double pitch, double targe_armor_distance) {
 	std::cout << "targetTo: yaw=" << yaw << ", pitch=" << pitch << std::endl;

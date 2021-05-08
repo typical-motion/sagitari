@@ -147,8 +147,9 @@ add_executable(${PROJECT_NAME}_node
     "src/findArmorBox.cpp"
     "src/logging.cpp"
     "src/TrackingSession.cpp"
-    "src/device/ros.cpp"
-    "src/device/io.cpp"
+    "src/targetTo.cpp"
+#    "src/device/ros.cpp"
+#    "src/device/io.cpp"
 )
 
 ## Rename C++ executable without prefix

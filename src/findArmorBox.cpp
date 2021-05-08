@@ -266,6 +266,7 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 	{
 		const Lightbar& barLeft = lightbars.at(i);
 		for (int j = i + 1; j < lightbars.size(); ++j)
+		// for (int j = i + 1; j < i + 2; ++j)
 		{
 			const Lightbar& barRight = lightbars.at(j);
 
@@ -397,8 +398,8 @@ std::vector<ArmorBox> Sagitari::findArmorBoxes(cv::Mat &src, const Lightbars &li
 		// Color filter
 		if(box.color != this->targetColor) continue;
 		// Validate similarity.
-		ArmorBox::Type type = getArmorBoxType(box, patternImage, *this);
-		// if (type == ArmorBox::Type::UNKNOW) continue;
+		box.type = getArmorBoxType(box, patternImage, *this);
+		// if (box.type == ArmorBox::Type::UNKNOW) continue;
 		box.updateScore();
 		result.push_back(box);
 	}
