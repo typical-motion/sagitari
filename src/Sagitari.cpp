@@ -94,7 +94,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 					}
 					else
 					{ // Tracking failed.
-						if (lightbars.size() < 2 || lightbars.size() > 4)
+						if (lightbars.size() < 2 || lightbars.size() > 6)
 						{
 							this->cancelTracking();
 						}
@@ -138,7 +138,8 @@ void Sagitari::aimAndFire(const ArmorBox &box)
 			point.x = ((point.x + box.lightbars.first.rect.center.x ) / 2.0 );
 		}
 	}
-	double distance = 1; // TODO: change me!
+	// 拟合结果
+	double distance = 4939.6 * pow(box.lightbars.first.rectangle.height() , -0.948);
 	cv::Point acutalTarget = point;
 	this->aimAndFire(acutalTarget, distance);
 }
