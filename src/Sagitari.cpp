@@ -158,6 +158,7 @@ void Sagitari::initializeTracker(const cv::Mat &src, const cv::Rect &roi)
 	this->state = Sagitari::State::TRACKING;
 	cv::TrackerKCF::Params params;
 	params.resize = true;
+	params.detect_thresh = 0.75;
 	this->tracker = cv::TrackerKCF::create(params);
 	this->tracker->init(src, roi);
 }

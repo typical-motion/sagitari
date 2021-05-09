@@ -118,7 +118,7 @@ Lightbars Sagitari::findLightbars(const cv::Mat &src)
     this->hsvBinImage = hsvFilter(src, this->targetColor);
     SAG_TIMING("Process open-close calcuation", {
         static cv::Mat morphKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(3, 5));
-        static cv::Mat dilateKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(13, 13));
+        static cv::Mat dilateKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(7, 7));
         static cv::Mat dilateLightKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(1, 1));
         cv::morphologyEx(this->rbgBinImage, this->rbgBinImage, cv::MORPH_CLOSE, morphKernel);
         cv::morphologyEx(this->rbgBinImage, this->rbgBinImage, cv::MORPH_OPEN, morphKernel);
