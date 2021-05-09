@@ -164,6 +164,7 @@ void Sagitari::initializeTracker(const cv::Mat &src, const cv::Rect &roi)
 void Sagitari::cancelTracking()
 {
 	this->state = Sagitari::State::SEARCHING;
+	this->targetTo(0, 0, 0, false);
 }
 void Sagitari::update(const uart_process_2::uart_receive& receive) {
 	if(receive.red_blue == 1) {
