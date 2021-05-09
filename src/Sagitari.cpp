@@ -167,8 +167,10 @@ void Sagitari::cancelTracking()
 }
 void Sagitari::update(const uart_process_2::uart_receive& receive) {
 	if(receive.red_blue == 1) {
+		std::cout << "寻找目标颜色：蓝色" << std::endl; 
 		this->targetColor = IdentityColor::IDENTITY_BLUE;
 	} else {
+		std::cout << "寻找目标颜色：红色" << std::endl; 
 		this->targetColor = IdentityColor::IDENTITY_RED;
 	}
 }

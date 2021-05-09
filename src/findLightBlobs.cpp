@@ -31,7 +31,7 @@ static IdentityColor get_blob_color(const cv::Mat &src, const cv::RotatedRect &b
     }
     else
     {
-        return IdentityColor::IDENTITY_RED;
+        return IdentityColor::IDENTITY_BLUE;
     }
 }
 // �������������С��Ӿ������֮�ￄ1�7
@@ -46,7 +46,6 @@ static bool isValidLightBlob(const std::vector<cv::Point> &contour, const cv::Ro
     if (!(55 <= rectangle.angle() && rectangle.angle() <= 135) && !(-135 <= rectangle.angle() && rectangle.angle() <= -55))
     {
         cv::rectangle(mask, rect.boundingRect(), cv::Scalar(100, 180, 200));
-        rectangle.draw(mask);
         cv::putText(mask, "angle: " + std::to_string(rectangle.angle()), rect.boundingRect().tl(), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(100, 180, 200));
         return false;
     }
@@ -56,7 +55,6 @@ static bool isValidLightBlob(const std::vector<cv::Point> &contour, const cv::Ro
     {
         cv::rectangle(mask, rect.boundingRect(), cv::Scalar(180, 100, 200));
         rectangle.draw(mask);
-        std::cout << "ratio: " << std::to_string(rectangle.ratio()) << std::endl;
         cv::putText(mask, "ratio: " + std::to_string(rectangle.ratio()), rect.boundingRect().tl(), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(100, 180, 200));
         return false;
     }
