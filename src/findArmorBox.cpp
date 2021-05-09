@@ -262,10 +262,10 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 	if (lightbars.size() < 2) return {};
 	cv::Rect screenSpaceRect(0, 0, src.cols, src.rows);
 	std::vector<ArmorBox> armorBoxes;
-	for (int i = 0; i < lightbars.size() - 1; ++i)
+	for (int i = 0; i < lightbars.size() - 1; i++)
 	{
 		const Lightbar& barLeft = lightbars.at(i);
-		for (int j = i + 1; j < lightbars.size(); ++j)
+		for (int j = i + 1; j < lightbars.size(); j++)
 		// for (int j = i + 1; j < i + 2; ++j)
 		{
 			const Lightbar& barRight = lightbars.at(j);
@@ -335,6 +335,7 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 				}
 			}
 			try {
+				armorBox.color = barLeft.color;
 				armorBox.roi = src(armorBox.boundingRect & screenSpaceRect).clone();
 				// armorBox.numVertices = {};
 				/**
