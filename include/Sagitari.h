@@ -178,3 +178,7 @@ private:
 	Sagitari* sagitari;
 
 };
+
+
+void calc_top_speed(ArmorBox box, cv::Mat &mat);
+bool detect_top(ArmorBox box);
