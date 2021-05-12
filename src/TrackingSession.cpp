@@ -16,7 +16,7 @@ TrackingSession::TrackingSession(Sagitari& sagitari): sagitari(sagitari) {
     if(fs.is_open()) {
         fs.close();
     }
-    fs.open("capture_x_ "+ std::to_string(getNum()) + ".csv", std::ios::out | std::ios::trunc );
+    // fs.open("capture_x_ "+ std::to_string(getNum()) + ".csv", std::ios::out | std::ios::trunc );
     reset();
 }
 void TrackingSession::reset() {
@@ -26,7 +26,7 @@ void TrackingSession::reset() {
     if(fs.is_open()) {
         fs.close();
     }
-    fs.open("capture_x_" + std::to_string(getNum()) + ".csv", std::ios::out | std::ios::trunc );
+    // fs.open("capture_x_" + std::to_string(getNum()) + ".csv", std::ios::out | std::ios::trunc );
 
 }
 /*

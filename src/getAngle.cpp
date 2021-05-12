@@ -20,21 +20,27 @@ vector<double> calc_angle(const Point& prev_point,const Point &current_point,dou
 	// focus: 60, im_real_weights: 3.75
 	angle_vector.push_back(atan(x_bias * im_real_weights / 100/focus) * 180 / 3.1415926);
 	angle_vector.push_back(atan(y_bias * im_real_weights / 100 /focus) * 180 / 3.1415926);
-	if(angle_vector[0] < 0 && fabs(angle_vector[0]) > limit_angle_val)
+	if(angle_vector[0] < 0 && fabs(angle_vector[0]) > limit_yaw_angle_val)
 	{
 		angle_vector[0] = -angle_x_bias;
 	}
-	else if(angle_vector[0] > 0 && fabs(angle_vector[0]) > limit_angle_val)
+	else if(angle_vector[0] > 0 && fabs(angle_vector[0]) > limit_yaw_angle_val)
 	{
 		angle_vector[0] = angle_x_bias;
 	}
-	if(angle_vector[1] < 0 && fabs(angle_vector[1]) >limit_angle_val)
+	if(angle_vector[1] < 0 && fabs(angle_vector[1]) >limit_pitch_angle_val)
 	{
 		angle_vector[1] = -angle_y_bias;
 	}
-	else if(angle_vector[1] > 0 && fabs(angle_vector[1]) > limit_angle_val)
+	else if(angle_vector[1] > 0 && fabs(angle_vector[1]) > limit_pitch_angle_val)
 	{
 		angle_vector[1] = angle_y_bias;
+	}
+	if(isnan(angle_vector[0]) || isinf(angle_vector[0])) {
+		angle_vector[0] = 0;
+	}
+	if(isnan(angle_vector[1]) || isinf(angle_vector[1])) {
+		angle_vector[1] = 0;
 	}
 	return angle_vector;
 }
@@ -45,7 +51,7 @@ Param(参数类型)（）
 Return:void
 Purpose（功能）对选择到的装甲板进行云台角度结算
 */
-std::vector<double> Sagitari::getAngle(const cv::Point &targe_armor_center_predict, double distance)
+std::vector<double> Sagitari::getAngle(const cv::Point &targe_armor_center_predict)
 {
 	// targe_armor_center_predict = targe_armor_center;
 	if (!(targe_armor_center_predict == ERROR_POINT))

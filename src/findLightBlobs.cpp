@@ -31,7 +31,7 @@ static IdentityColor get_blob_color(const cv::Mat &src, const cv::RotatedRect &b
     }
     else
     {
-        return IdentityColor::IDENTITY_RED;
+        return IdentityColor::IDENTITY_BLUE;
     }
 }
 // �������������С��Ӿ������֮�ￄ1�7
@@ -46,7 +46,6 @@ static bool isValidLightBlob(const std::vector<cv::Point> &contour, const cv::Ro
     if (!(55 <= rectangle.angle() && rectangle.angle() <= 135) && !(-135 <= rectangle.angle() && rectangle.angle() <= -55))
     {
         cv::rectangle(mask, rect.boundingRect(), cv::Scalar(100, 180, 200));
-        rectangle.draw(mask);
         cv::putText(mask, "angle: " + std::to_string(rectangle.angle()), rect.boundingRect().tl(), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(100, 180, 200));
         return false;
     }
@@ -56,7 +55,6 @@ static bool isValidLightBlob(const std::vector<cv::Point> &contour, const cv::Ro
     {
         cv::rectangle(mask, rect.boundingRect(), cv::Scalar(180, 100, 200));
         rectangle.draw(mask);
-        std::cout << "ratio: " << std::to_string(rectangle.ratio()) << std::endl;
         cv::putText(mask, "ratio: " + std::to_string(rectangle.ratio()), rect.boundingRect().tl(), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(100, 180, 200));
         return false;
     }
@@ -120,7 +118,7 @@ Lightbars Sagitari::findLightbars(const cv::Mat &src)
     this->hsvBinImage = hsvFilter(src, this->targetColor);
     SAG_TIMING("Process open-close calcuation", {
         static cv::Mat morphKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(3, 5));
-        static cv::Mat dilateKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(13, 13));
+        static cv::Mat dilateKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(7, 7));
         static cv::Mat dilateLightKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(1, 1));
         cv::morphologyEx(this->rbgBinImage, this->rbgBinImage, cv::MORPH_CLOSE, morphKernel);
         cv::morphologyEx(this->rbgBinImage, this->rbgBinImage, cv::MORPH_OPEN, morphKernel);
@@ -132,8 +130,9 @@ Lightbars Sagitari::findLightbars(const cv::Mat &src)
         return light_blobs; // ��������
     if (this->hsvBinImage.empty())
         return light_blobs;
-    this->sendDebugImage("bin_light", this->rbgBinImage);
-    this->sendDebugImage("bin_dim", this->hsvBinImage);
+    cv::Mat binImage;
+    cv::hconcat(this->rbgBinImage, this->hsvBinImage, binImage);
+    this->sendDebugImage("binImage", binImage);
 
     // ʹ��������ͬ�Ķ�ֵ����ֵͬʱ���е�����ȡ�����ٻ������նԶ�ֵ�����������Ӱ�졄1�7
     // ͬʱ�޳��ظ��ĵ������޳�������㣬���������ҳ����ĵ���ȡ�����ￄ1�7

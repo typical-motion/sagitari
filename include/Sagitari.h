@@ -7,6 +7,9 @@
 #include <opencv2/tracking.hpp>
 #include <sagitari_debug/sagitari_img_debug.h>
 #include <image_transport/image_transport.h>
+#include <message_filters/subscriber.h>
+#include <uart_process_2/uart_send.h>
+#include <uart_process_2/uart_receive.h>
 
 #include "loggging.h"
 #include "shape.h"
@@ -108,23 +111,24 @@ public:
 	enum class State {
 		SEARCHING, TRACKING
 	};
-	Sagitari(IdentityColor, DeviceProvider*);
+	Sagitari(IdentityColor);
+
 	Sagitari& operator <<(cv::Mat&);
-	DeviceProvider *device = nullptr;
-	/**
-	* 获取一个ROI中的装甲板位置
-	* @param roi ROI
-	* @param armorBox 输出匹配到的装甲板
-	* @return 如果成功，返回true。
-	*/
-	// bool getArmorBox(cv::Mat& roi, ArmorBox*& armorBox);
+
 	ros::Publisher debugImagePublisher;
+	ros::Publisher uartPublisher;
 	image_transport::Publisher originalImagePublisher;
+
 	void cancelTracking();
+
 	void sendDebugImage(const cv::String&, const cv::Mat& mat);
 	void sendOriginalImage(const cv::Mat& mat);
+
 	Lightbars findLightbars(const cv::Mat&);					// 寻找灯条
 	std::vector<ArmorBox> findArmorBoxes(cv::Mat& mat, const Lightbars& lightbars);
+
+	void targetTo(double yaw, double pitch, double distance, bool hasTarget);
+	void update(const uart_process_2::uart_receive&);
 
 private:
 	IdentityColor targetColor;				// 目标颜色
@@ -133,6 +137,9 @@ private:
 
 	cv::Mat hsvBinImage;					// HSV预处理二值图
 	cv::Mat rbgBinImage;					// RBG预处理二值图
+
+	cv::Point lastShot;
+	TrackingSession *trackingSession;
 	
 
 	void initializeTracker(const cv::Mat& src, const cv::Rect& roi); // 初始化追踪器
@@ -143,16 +150,18 @@ private:
 	 * @return 距离
 	 **/
 	double getDistance(ArmorBox box);
+	/**
+	 * 测角
+	 * @param rect 目标点
+	 * @return yaw, pitch
+	 **/
+	std::vector<double> getAngle(const cv::Point& point);
+
 	void aimAndFire(const ArmorBox& box);
-	void aimAndFire(const cv::Point2f& point);
+	void aimAndFire(const cv::Point2f& point, double distance);
 
-	std::vector<double> getAngle(const cv::Point& point, double distance);
-	std::vector<double> getAngle_(const cv::Point& prevPoint, const cv::Point& currentPoint, double focus);
-
-	cv::Point lastShot;
 	double im_real_weights = 0;
 	double real_distance_height = 0.06;
-	TrackingSession *trackingSession;
 
 	
 };
