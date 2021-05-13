@@ -6,11 +6,14 @@
 #include <uart_process_2/uart_send.h>
 #include "clearscreen.h"
 
-Sagitari sagitari(IdentityColor::IDENTITY_RED);
+Sagitari sagitari(IdentityColor::IDENTITY_BLUE);
 
 void onCameraRawImageReceived(const sensor_msgs::ImageConstPtr &msg) {
+	double __timer_startAt = cv::getTickCount();
 	sagitari << cv_bridge::toCvCopy(msg, "bgr8")->image;
 	clearScreen();	
+	std::cerr << " - Timing: All fps: " << std::to_string(1 / ((cv::getTickCount() - __timer_startAt) / cv::getTickFrequency())) << "." << std::endl;
+	
 }
 void onUartMessageReceived(const uart_process_2::uart_receive &msg) {
 	sagitari.update(msg);
