@@ -117,12 +117,13 @@ public:
 
 	ros::Publisher debugImagePublisher;
 	ros::Publisher uartPublisher;
-	image_transport::Publisher originalImagePublisher;
+
+	State state;							// 射手状态
+	int errono;								// 最后一次错误代码
 
 	void cancelTracking();
 
 	void sendDebugImage(const cv::String&, const cv::Mat& mat);
-	void sendOriginalImage(const cv::Mat& mat);
 
 	Lightbars findLightbars(const cv::Mat&);					// 寻找灯条
 	std::vector<ArmorBox> findArmorBoxes(cv::Mat& mat, const Lightbars& lightbars);
@@ -132,7 +133,6 @@ public:
 
 private:
 	IdentityColor targetColor;				// 目标颜色
-	State state;							// 射手状态
 	cv::Ptr<cv::Tracker> tracker;			// 追踪器
 
 	cv::Mat hsvBinImage;					// HSV预处理二值图

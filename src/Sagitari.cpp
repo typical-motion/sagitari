@@ -18,11 +18,7 @@ Sagitari::Sagitari(IdentityColor targetColor) : targetColor(targetColor)
 
 Sagitari &Sagitari::operator<<(cv::Mat &input)
 {
-	cv::Mat bright;
 	cv::Mat tmp = input.clone();
-	gammaCorrection(input, bright, 0.4);
-	this->sendOriginalImage(input);
-	this->sendDebugImage("Bright", bright);
 	cv::Rect screenSpaceRect(0, 0, input.cols, input.rows);
 	try {
 		if (this->state == Sagitari::State::SEARCHING)
@@ -45,7 +41,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 
 				SAG_TIMINGM("Tracker Intialization", tmp, 3, {
 					cv::rectangle(tmp, box.boundingRect, cv::Scalar(165, 100, 180), 1);
-					this->initializeTracker(bright, box.boundingRect & screenSpaceRect);
+					this->initializeTracker(input, box.boundingRect & screenSpaceRect);
 				})
 				// 进入追踪模式
 				this->trackingSession->reset();
@@ -73,7 +69,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 
 					
 					nearbyRect &= screenSpaceRect;
-					cv::Mat reROI = input(nearbyRect).clone();
+					cv::Mat reROI = input(nearbyRect);
 
 					Lightbars lightbars = this->findLightbars(reROI);
 					std::vector<ArmorBox> boxes = this->findArmorBoxes(reROI, lightbars);
@@ -90,7 +86,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 						this->trackingSession->update(input, box);
 						this->aimAndFire(box);
 						// Restart Trracking to improve accuracy
-						this->initializeTracker(bright, box.boundingRect & screenSpaceRect);
+						this->initializeTracker(input, box.boundingRect & screenSpaceRect);
 					}
 					else
 					{ // Tracking failed.
@@ -123,24 +119,9 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 
 void Sagitari::aimAndFire(const ArmorBox &box)
 {
-	const int MOVE_TRESHOLD = 10;
-	cv::Point2f point = cv::Point(box.lightbars.first.rect.center + box.lightbars.second.rect.center) / 2.0;
-	cv::Point2f appendVector;
-	if(this->trackingSession->pointTime < .5) {
-		this->trackingSession->pointTime = cv::getTickCount() / cv::getTickFrequency();
-		this->trackingSession->pointAt = cv::Point2f(point);
-	} else if(this->trackingSession->pointTime - (cv::getTickCount() / cv::getTickFrequency()) > 0.5) {
-		// Do the math.
-		cv::Point2f diff = this->trackingSession->pointAt - point;
-		if(diff.x > MOVE_TRESHOLD) {
-			point.x = ((point.x + box.lightbars.second.rect.center.x ) / 2.0 );
-		} else if(diff.x < -MOVE_TRESHOLD){
-			point.x = ((point.x + box.lightbars.first.rect.center.x ) / 2.0 );
-		}
-	}
 	// 拟合结果
 	double distance = 4939.6 * pow(box.lightbars.first.rectangle.height() , -0.948);
-	cv::Point acutalTarget = point;
+	cv::Point acutalTarget = cv::Point(box.lightbars.first.rect.center + box.lightbars.second.rect.center) / 2.0;
 	this->aimAndFire(acutalTarget, distance);
 }
 void Sagitari::aimAndFire(const cv::Point2f &point, double distance)
@@ -153,7 +134,7 @@ void Sagitari::aimAndFire(const cv::Point2f &point, double distance)
 		this->lastShot = point;
 	}
 }
-void Sagitari::initializeTracker(const cv::Mat &src, const cv::Rect &roi)
+void Sagitari::initializeTracker(input cv::Mat &src, const cv::Rect &roi)
 {
 	this->state = Sagitari::State::TRACKING;
 	cv::TrackerKCF::Params params;
