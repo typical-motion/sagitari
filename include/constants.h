@@ -22,6 +22,7 @@ const float CONTOUR_RATIO_PREFERED = 1.5;	// ��Ե������
  * ����
  */
 const float RECTS_ANGLES_TRESHOLD = 5;		// һ�Ե���֮��ĽǶȲ���ֵ
+const float RECTS_ANGLES_TRACKING_TRESHOLD = 8;		// һ�Ե���֮��ĽǶȲ���ֵ
 const float RECTS_CENTER_Y_TRESHOLD = 50;   // һ�Ե������ĵ�Y���ֵ
 const float BARLINE_ANGLE_TRESHOLD = 3;    // һ�Ե���֮���ƽ��ֱ������������γɵĽǶ���ֵ��������Ӧ���� 90��
 /**

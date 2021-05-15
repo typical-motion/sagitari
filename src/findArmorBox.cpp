@@ -42,10 +42,16 @@ typedef std::pair<float, ArmorBox::Type> SimilaritySet;
 /**
  * 判断一对灯条角度的差值
  **/
-inline bool isValidAngle(const Lightbar &barLeft, const Lightbar &barRight)
+inline bool isValidAngle(const Lightbar &barLeft, const Lightbar &barRight, const Sagitari& sagitari)
 {
-	if(abs(barLeft.rectangle.angle() - barRight.rectangle.angle()) >= RECTS_ANGLES_TRESHOLD) {
-		return false;
+	if(sagitari.state == Sagitari::State::TRACKING) {
+		if(abs(barLeft.rectangle.angle() - barRight.rectangle.angle()) >= RECTS_ANGLES_TRACKING_TRESHOLD) {
+			return false;
+		}
+	} else {
+		if(abs(barLeft.rectangle.angle() - barRight.rectangle.angle()) >= RECTS_ANGLES_TRESHOLD) {
+			return false;
+		}
 	}
 	if((barLeft.rectangle.angle() > 90 && barRight.rectangle.angle() < 90) || (barRight.rectangle.angle() > 90 && barLeft.rectangle.angle() < 90)) {
 		return false;
@@ -110,7 +116,7 @@ bool isValidColor(const Lightbar& barLeft, const Lightbar& barRight) {
  * 判断是否为一对灯条
  * @return 返回值代表失败原因，具体含义见此处实现。
  **/
-int isLightbarPair(const Lightbar &barLeft, const Lightbar &barRight)
+int isLightbarPair(const Lightbar &barLeft, const Lightbar &barRight, const Sagitari& sagitari)
 {
 	// if(barLeft.length < 15 || barRight.length < 15) return -6;
 	if(!isValidBarLength(barLeft, barRight)) return -1;
@@ -118,7 +124,7 @@ int isLightbarPair(const Lightbar &barLeft, const Lightbar &barRight)
 	// std::cout << "Color Ok" << std::endl;
 	if (!isValidBarAngle(barLeft) && !isValidBarAngle(barRight)) return -2;
 	// std::cout << "BarAngle Ok" << std::endl;
-	if (!isValidAngle(barLeft, barRight)) return -3;
+	if (!isValidAngle(barLeft, barRight, sagitari)) return -3;
 	// std::cout << "Angle Ok" << std::endl;
 	if (!isValidBarCenter(barLeft, barRight)) return -5;
 	// std::cout << "BarCenter Ok" << std::endl;
@@ -258,7 +264,7 @@ static ArmorBox::Type getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg, Sagi
 /**
  * 获取装甲板
  **/
-std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) {
+std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars, Sagitari& sagitari) {
 	if (lightbars.size() < 2) return {};
 	cv::Rect screenSpaceRect(0, 0, src.cols, src.rows);
 	std::vector<ArmorBox> armorBoxes;
@@ -266,13 +272,12 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 	{
 		const Lightbar& barLeft = lightbars.at(i);
 		for (int j = i + 1; j < lightbars.size(); j++)
-		// for (int j = i + 1; j < i + 2; ++j)
 		{
 			const Lightbar& barRight = lightbars.at(j);
 
 			if(barLeft.color != barRight.color) continue;
-			if (int ret = isLightbarPair(barLeft, barRight)) {
-				switch(ret) {
+			if (sagitari.errono = isLightbarPair(barLeft, barRight, sagitari)) {
+				switch(sagitari.errono) {
 					case -1:
 						std::cout << "失败：灯条长度比";
 					break;
@@ -292,7 +297,7 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 						std::cout << "失败：灯条中心点偏差太大";
 					break;
 					default:
-						std::cout << "失败：" << ret;
+						std::cout << "失败：" << sagitari.errono;
 					break;
 				}
 				std::cout << std::endl;
@@ -336,7 +341,7 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 			}
 			try {
 				armorBox.color = barLeft.color;
-				armorBox.roi = src(armorBox.boundingRect & screenSpaceRect).clone();
+				armorBox.roi = src(armorBox.boundingRect & screenSpaceRect);
 				// armorBox.numVertices = {};
 				/**
 				 *  2        3             2           3            2          3
@@ -352,9 +357,7 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) 
 				armorBox.numVertices[1] = rectBarLeftExtend.points[1];
 				armorBox.numVertices[2] = rectBarLeftExtend.points[2];
 				armorBox.numVertices[3] = rectBarRightExtend.points[3];
-				// rectBarRightExtend.draw(src);
-				// rectBarLeftExtend.draw(src);
-				// rectBarLeftExtend.draw(src);
+
 				armorBox.rect = cv::RotatedRect(armorBox.rect.center, cv::Size(std::min(armorBox.rect.size.width, armorBox.rect.size.height), std::min(armorBox.rect.size.width, armorBox.rect.size.height)), barLeft.rect.angle);
 
 				armorBox.roiCard = src(armorBox.rect.boundingRect() & screenSpaceRect);
@@ -391,15 +394,13 @@ bool isSameArmorBox(const ArmorBox &box1, const ArmorBox &box2)
 }
 std::vector<ArmorBox> Sagitari::findArmorBoxes(cv::Mat &src, const Lightbars &lightbars)
 {
-	cv::Mat patternImage;
-	src.copyTo(patternImage);
 	std::vector<ArmorBox> result;
-	for (ArmorBox &box : matchArmorBoxes(src, lightbars))
+	for (ArmorBox &box : matchArmorBoxes(src, lightbars, *this))
 	{
 		// Color filter
 		if(box.color != this->targetColor) continue;
 		// Validate similarity.
-		box.type = getArmorBoxType(box, patternImage, *this);
+		box.type = getArmorBoxType(box, src, *this);
 		// if (box.type == ArmorBox::Type::UNKNOW) continue;
 		box.updateScore();
 		result.push_back(box);
