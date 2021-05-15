@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 	sagitari.uartPublisher		 	= nh.advertise<uart_process_2::uart_send>("uart_send", 1); 			//初始化发送串口话题
 	sagitari.debugImagePublisher 	= nh.advertise<sagitari_debug::sagitari_img_debug>("Sagitari/debugImage", 1);
 	
-	ros::Rate rate(30);
+	ros::Rate rate(200);
 	while (ros::ok())
 	{
 		ros::spinOnce();
