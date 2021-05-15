@@ -134,7 +134,7 @@ void Sagitari::aimAndFire(const cv::Point2f &point, double distance)
 		this->lastShot = point;
 	}
 }
-void Sagitari::initializeTracker(input cv::Mat &src, const cv::Rect &roi)
+void Sagitari::initializeTracker(const cv::Mat &src, const cv::Rect &roi)
 {
 	this->state = Sagitari::State::TRACKING;
 	cv::TrackerKCF::Params params;

@@ -24,7 +24,6 @@ int main(int argc, char *argv[])
 
 	image_transport::Subscriber cameraRawImageSubscriber 
 									= it.subscribe("DahuaCamera/LowDims", 1, onCameraRawImageReceived);
-	sagitari.originalImagePublisher = it.advertise("Sagitari/originalImage", 1);
 
 	ros::Subscriber uartMessageSubsriber 
 									= nh.subscribe("uart_receive", 1, onUartMessageReceived);			//接收串口模式
