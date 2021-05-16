@@ -39,12 +39,13 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 				ArmorBox box = boxes.at(0);
 				drawPoints(box.numVertices, tmp);
 
-				SAG_TIMINGM("Tracker Intialization", tmp, 3, {
-					cv::rectangle(tmp, box.boundingRect, cv::Scalar(165, 100, 180), 1);
-					this->initializeTracker(input, box.boundingRect & screenSpaceRect);
-				})
 				// 进入追踪模式
 				this->trackingSession->reset();
+				cv::rectangle(tmp, box.boundingRect, cv::Scalar(165, 100, 180), 1);
+				SAG_TIMINGM("Tracker Intialization", tmp, 3, {
+					this->initializeTracker(input, box.boundingRect & screenSpaceRect);
+				})
+				this->trackingSession->update(input, box);
 				this->aimAndFire(box);
 			}
 			else
@@ -56,10 +57,10 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 		{
 			SAG_LOGM(Logger::Tag::L_INFO, "Enter tracking mode...", tmp);
 			cv::Rect2d rect;
-			SAG_TIMINGM("Track a frame", tmp, 1, {
+			// SAG_TIMINGM("Track a frame", tmp, 1, {
 				if (this->tracker->update(input, rect))
 				{
-					const float resizeFactor = 2.1;
+					const float resizeFactor = 2.345;
 					cv::Point nearbyRectCenter = (rect.tl() + rect.br()) / 2;
 					cv::Rect nearbyRect(rect);
 					nearbyRect.width *= resizeFactor;
@@ -77,30 +78,33 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 					{
 						box.relocateROI(nearbyRect.x, nearbyRect.y);
 					}
-					// For debug only.
-					if (boxes.size() > 0)
-					{ // First ?
-						ArmorBox box = boxes.at(0);
-						drawPoints(box.numVertices, tmp);
-						box.boundingRect &= screenSpaceRect;
-						this->trackingSession->update(input, box);
-						this->aimAndFire(box);
-						// Restart Trracking to improve accuracy
-						this->initializeTracker(input, box.boundingRect & screenSpaceRect);
-					}
-					else
-					{ // Tracking failed.
+					ArmorBox *box = NULL;
+					if(boxes.size() > 0) {
+						box = &boxes.at(0);
+						this->initializeTracker(input, box->boundingRect & screenSpaceRect);  	// Restart Trracking to improve accuracy
+						this->trackingSession->update(input, *box);
+					} else {
 						if (lightbars.size() < 2 || lightbars.size() > 6)
 						{
-							this->cancelTracking();
+							if(this->trackingSession->errorFrames++ < 2) {
+								// box = this->trackingSession->predictArmorBox(rect);
+							}
 						}
 						else
 						{
 							cv::rectangle(tmp, rect, cv::Scalar(235, 200, 200), 1);
-							this->aimAndFire((rect.tl() + rect.br()) / 2, 0);
+							box = this->trackingSession->predictArmorBox(rect);
+							// this->aimAndFire((rect.tl() + rect.br()) / 2, 0);
 						}
 					}
-					
+					if(box == NULL) {
+						this->cancelTracking();							
+					} else {
+						drawPoints(box->numVertices, tmp);
+						box->boundingRect &= screenSpaceRect;
+						
+						this->aimAndFire(*box);
+					}
 				}
 				else
 				{
@@ -108,7 +112,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 					this->cancelTracking();
 					// 目标离开视野
 				}
-			})
+			// })
 		}
 		this->sendDebugImage("Tracking", tmp);
 	} catch (cv::Exception e) {

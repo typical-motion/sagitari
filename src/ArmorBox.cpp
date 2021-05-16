@@ -1,7 +1,18 @@
 #include "Sagitari.h"
-
-ArmorBox::ArmorBox(const IdentityColor& clr, const std::pair<Lightbar, Lightbar>& lbs) : color(clr), lightbars(lbs) {
+#include "imgproc.h"
+ArmorBox::ArmorBox(const IdentityColor& clr, const std::pair<Lightbar, Lightbar>& lbs, cv::Point vertices[4]) : color(clr), lightbars(lbs) {
 	type = ArmorBox::Type::UNKNOW;
+	for (int i = 0; i < 4; i++)
+	{
+		this->numVertices[i] = vertices[i];
+	}
+	
+	this->size = cv::Size(
+		(pointLength(this->numVertices[2], this->numVertices[3]) + pointLength(this->numVertices[1], this->numVertices[0])) / 2,
+		(pointLength(this->numVertices[2], this->numVertices[1]) + pointLength(this->numVertices[3], this->numVertices[0])) / 2
+	);
+	this->spinYaw = acos(this->size.height / this->size.width);
+
 }
 void ArmorBox::updateScore() {
 	score = boundingRect.area();

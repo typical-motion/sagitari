@@ -43,6 +43,13 @@ void TrackingSession::update(const cv::Mat& src, const cv::Rect& roi){
 */
 
 void TrackingSession::update(const cv::Mat& src, const ArmorBox& armorBox){
-    this->lastArmorBox = &armorBox;
-
+    if(this->lastArmorBox != NULL) {
+        delete this->lastArmorBox;
+    }
+    this->lastArmorBox = new ArmorBox(armorBox);
+    
+}
+ArmorBox* TrackingSession::predictArmorBox(const cv::Rect& possible) {
+    // this->lastArmorBox->relocateROI(-possible.x, -possible.y);
+    return this->lastArmorBox;
 }

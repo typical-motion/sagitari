@@ -325,7 +325,7 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars, 
 			cv::Point bottomRight = rect_right.br();
 			
 			Lightbars pair_blobs = {lightbars.at(i), lightbars.at(j)};
-			ArmorBox armorBox(barLeft.color, std::make_pair(barLeft, barRight));
+
 
 			Rectangle rectBarLeftExtend(barLeftExtend);
 			Rectangle rectBarRightExtend(barRightExtend);
@@ -340,7 +340,13 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars, 
 				}
 			}
 			try {
-				armorBox.color = barLeft.color;
+				cv::Point numVertices[4];
+				numVertices[0] = rectBarRightExtend.points[0];
+				numVertices[1] = rectBarLeftExtend.points[1];
+				numVertices[2] = rectBarLeftExtend.points[2];
+				numVertices[3] = rectBarRightExtend.points[3];
+
+				ArmorBox armorBox(barLeft.color, std::make_pair(barLeft, barRight), numVertices);
 				armorBox.roi = src(armorBox.boundingRect & screenSpaceRect);
 				// armorBox.numVertices = {};
 				/**
@@ -352,11 +358,6 @@ std::vector<ArmorBox> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars, 
 				 *  0        1             1           0            0          1
 				 * 
 				 */
-
-				armorBox.numVertices[0] = rectBarRightExtend.points[0];
-				armorBox.numVertices[1] = rectBarLeftExtend.points[1];
-				armorBox.numVertices[2] = rectBarLeftExtend.points[2];
-				armorBox.numVertices[3] = rectBarRightExtend.points[3];
 
 				armorBox.rect = cv::RotatedRect(armorBox.rect.center, cv::Size(std::min(armorBox.rect.size.width, armorBox.rect.size.height), std::min(armorBox.rect.size.width, armorBox.rect.size.height)), barLeft.rect.angle);
 
