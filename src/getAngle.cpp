@@ -20,6 +20,12 @@ vector<double> calc_angle(const Point& prev_point,const Point &current_point,dou
 	// focus: 60, im_real_weights: 3.75
 	angle_vector.push_back(atan(x_bias * im_real_weights / 100/focus) * 180 / 3.1415926);
 	angle_vector.push_back(atan(y_bias * im_real_weights / 100 /focus) * 180 / 3.1415926);
+	if(isnan(angle_vector[0]) || isinf(angle_vector[0])) {
+		angle_vector[0] = 0;
+	}
+	if(isnan(angle_vector[1]) || isinf(angle_vector[1])) {
+		angle_vector[1] = 0;
+	}
 	if(angle_vector[0] < 0 && fabs(angle_vector[0]) > limit_yaw_angle_val)
 	{
 		angle_vector[0] = -angle_x_bias;
@@ -35,12 +41,6 @@ vector<double> calc_angle(const Point& prev_point,const Point &current_point,dou
 	else if(angle_vector[1] > 0 && fabs(angle_vector[1]) > limit_pitch_angle_val)
 	{
 		angle_vector[1] = angle_y_bias;
-	}
-	if(isnan(angle_vector[0]) || isinf(angle_vector[0])) {
-		angle_vector[0] = 0;
-	}
-	if(isnan(angle_vector[1]) || isinf(angle_vector[1])) {
-		angle_vector[1] = 0;
 	}
 	return angle_vector;
 }

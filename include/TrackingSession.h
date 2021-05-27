@@ -9,11 +9,11 @@ class TrackingSession {
 
         TrackingSession(Sagitari& sagitari);
 
-        double pointTime;
         cv::Point2f pointAt;
-        double vehicleBoxWidth;
-        float stateFrontMostWidth;
+        ArmorBox* lastArmorBox;
+        int errorFrames;
         void reset();
         void update(const cv::Mat& src, const ArmorBox& armorBox);
+        ArmorBox* predictArmorBox(const cv::Rect& possibleRect);
         // void update(const cv::Mat& src, const cv::Rect& roi);
 };

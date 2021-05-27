@@ -31,7 +31,7 @@ static IdentityColor get_blob_color(const cv::Mat &src, const cv::RotatedRect &b
     }
     else
     {
-        return IdentityColor::IDENTITY_RED;
+        return IdentityColor::IDENTITY_BLUE;
     }
 }
 // �������������С��Ӿ������֮�ￄ1�7
@@ -90,25 +90,33 @@ Lightbars Sagitari::findLightbars(const cv::Mat &src)
 {
     cv::Mat tmp;
     src.copyTo(tmp);
-    cv::blur(src, src, cv::Size(3, 3));
+    //  cv::blur(src, src, cv::Size(3, 3));
 
     Lightbars light_blobs;
     cv::Mat color_channel;
     std::vector<cv::Mat> channels;
     cv::split(src, channels);
-    if (this->targetColor == IdentityColor::IDENTITY_BLUE)
-    {
-        color_channel = channels[0];
+    std::cerr << "Ready to split " << src.size << std::endl;
+    if(channels.size() >= 3) {
+        if (this->targetColor == IdentityColor::IDENTITY_BLUE)
+        {
+            color_channel = channels[0];
+        }
+        else if (this->targetColor == IdentityColor::IDENTITY_RED)
+        {
+            color_channel = channels[2];
+        }
+    } else {
+        std::cerr << "src.channels() = " << src.channels() << std::endl;
+        std::cerr << "channels.size() = " << channels.size() << std::endl;
     }
-    else if (this->targetColor == IdentityColor::IDENTITY_RED)
-    {
-        color_channel = channels[2];
-    }
+    std::cerr << "Success to split" << std::endl;
+    
 
     int light_threshold;
     if (this->targetColor == IdentityColor::IDENTITY_BLUE)
     {
-        light_threshold = 225;
+        light_threshold = 180;
     }
     else
     {
@@ -119,13 +127,13 @@ Lightbars Sagitari::findLightbars(const cv::Mat &src)
     // cv::threshold(color_channel, this->hsvBinImage, 140, 255, cv::THRESH_BINARY); // ��ֵ����Ӧͨ��
     this->hsvBinImage = hsvFilter(src, this->targetColor);
     SAG_TIMING("Process open-close calcuation", {
-        static cv::Mat morphKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(3, 5));
-        static cv::Mat dilateKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(13, 13));
+        static cv::Mat morphKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(4, 4));
+        static cv::Mat dilateKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
         static cv::Mat dilateLightKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(1, 1));
-        cv::morphologyEx(this->rbgBinImage, this->rbgBinImage, cv::MORPH_CLOSE, morphKernel);
-        cv::morphologyEx(this->rbgBinImage, this->rbgBinImage, cv::MORPH_OPEN, morphKernel);
+        // cv::morphologyEx(this->rbgBinImage, this->rbgBinImage, cv::MORPH_CLOSE, morphKernel);
+        // cv::morphologyEx(this->rbgBinImage, this->rbgBinImage, cv::MORPH_OPEN, morphKernel);
         cv::dilate(this->hsvBinImage, this->hsvBinImage, dilateKernel);
-        cv::dilate(this->rbgBinImage, this->rbgBinImage, dilateLightKernel);
+        //  cv::dilate(this->rbgBinImage, this->rbgBinImage, dilateLightKernel);
     })
 
     if (this->rbgBinImage.empty())

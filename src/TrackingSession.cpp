@@ -5,29 +5,12 @@
 #include <cmath>
 #include <fstream>
 
-int getNum() {
-    std::vector<cv::String> filenames;
-    cv::glob("capture_x_*.csv", filenames);
-    return filenames.size();
-}
-std::ofstream fs;
-
 TrackingSession::TrackingSession(Sagitari& sagitari): sagitari(sagitari) {
-    if(fs.is_open()) {
-        fs.close();
-    }
-    // fs.open("capture_x_ "+ std::to_string(getNum()) + ".csv", std::ios::out | std::ios::trunc );
     reset();
 }
 void TrackingSession::reset() {
-    this->pointTime = 0;
-    this->vehicleBoxWidth = 0;
-    this->stateFrontMostWidth = 0;
-    if(fs.is_open()) {
-        fs.close();
-    }
-    // fs.open("capture_x_" + std::to_string(getNum()) + ".csv", std::ios::out | std::ios::trunc );
-
+    this->errorFrames = 0;
+    this->lastArmorBox = NULL;
 }
 /*
 void TrackingSession::update(const cv::Mat& src, const cv::Rect& roi){
@@ -60,5 +43,16 @@ void TrackingSession::update(const cv::Mat& src, const cv::Rect& roi){
 */
 
 void TrackingSession::update(const cv::Mat& src, const ArmorBox& armorBox){
-    fs << armorBox.numVertices[0].x << ",";
+    /*
+    if(this->lastArmorBox != NULL) {
+        delete this->lastArmorBox;
+    }
+    std::cout << "Ready?" << std::endl;
+    this->lastArmorBox = new ArmorBox(armorBox);
+    std::cout << "Fuck" << std::endl;
+    */
+}
+ArmorBox* TrackingSession::predictArmorBox(const cv::Rect& possible) {
+    // this->lastArmorBox->relocateROI(-possible.x, -possible.y);
+    return this->lastArmorBox;
 }

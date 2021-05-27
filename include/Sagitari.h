@@ -64,7 +64,9 @@ public:
 	double score = 0;
 	bool isLarge = 0;
 	cv::Size size; // 装甲板长宽
-	ArmorBox(const IdentityColor&, const std::pair<Lightbar, Lightbar>&);
+	float spinYaw;
+
+	ArmorBox(const IdentityColor&, const std::pair<Lightbar, Lightbar>&, cv::Point[4]);
 	/**
 	 * 调整 x, y 的偏移量
 	 **/
@@ -125,10 +127,12 @@ public:
 	void sendOriginalImage(const cv::Mat& mat);
 
 	Lightbars findLightbars(const cv::Mat&);					// 寻找灯条
-	std::vector<ArmorBox> findArmorBoxes(cv::Mat& mat, const Lightbars& lightbars);
+	std::vector<ArmorBox*> findArmorBoxes(cv::Mat& mat, const Lightbars& lightbars);
 
 	void targetTo(double yaw, double pitch, double distance, bool hasTarget);
 	void update(const uart_process_2::uart_receive&);
+
+	bool suggestFire;
 
 private:
 	IdentityColor targetColor;				// 目标颜色
@@ -140,6 +144,8 @@ private:
 
 	cv::Point lastShot;
 	TrackingSession *trackingSession;
+
+	bool isAntiSpinnerMode = false;
 	
 
 	void initializeTracker(const cv::Mat& src, const cv::Rect& roi); // 初始化追踪器
@@ -158,7 +164,7 @@ private:
 	std::vector<double> getAngle(const cv::Point& point);
 
 	void aimAndFire(const ArmorBox& box);
-	void aimAndFire(const cv::Point2f& point, double distance);
+	void aimAndFire(const cv::Point2f& point, double distance );
 
 	double im_real_weights = 0;
 	double real_distance_height = 0.06;

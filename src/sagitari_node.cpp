@@ -5,6 +5,8 @@
 #include <cv_bridge/cv_bridge.h>
 #include <uart_process_2/uart_send.h>
 #include "clearscreen.h"
+#include <stdlib.h>
+#include <sys/signal.h>
 
 Sagitari sagitari(IdentityColor::IDENTITY_BLUE);
 
@@ -18,8 +20,14 @@ void onCameraRawImageReceived(const sensor_msgs::ImageConstPtr &msg) {
 void onUartMessageReceived(const uart_process_2::uart_receive &msg) {
 	sagitari.update(msg);
 }
+void failSafe(int) {
+	std::cerr << "[FailSafe] I'm dying."  << std::endl;
+	sagitari.targetTo(0, 0, 0, false);
+}
 int main(int argc, char *argv[])
 {
+	signal(SIGINT, failSafe);
+	signal(SIGABRT, failSafe);
 	ros::init(argc, argv, "sagitari");
 
 	ros::NodeHandle nh;

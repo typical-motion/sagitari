@@ -17,6 +17,9 @@ void drawPoints(const cv::Point2f points[], const cv::Mat &out, const cv::Scalar
 {
 	for (int i = 0; i < 4; ++i)
 	{
+		if(std::isnan(points[i].x) || std::isinf(points[i].x) || std::isnan(points[i].y) || std::isinf(points[i].y)) {
+			continue;
+		}
 		cv::putText(out, std::to_string(i), points[i], cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(100, 160, 180));
 		for (int j = i; j < 4; ++j)
 		{
