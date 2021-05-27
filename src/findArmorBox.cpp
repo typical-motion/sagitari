@@ -258,10 +258,10 @@ static ArmorBox::Type getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg, Sagi
 /**
  * 获取装甲板
  **/
-std::vector<ArmorBox*> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) {
+std::vector<ArmorBoxPtr> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars) {
 	if (lightbars.size() < 2) return {};
 	cv::Rect screenSpaceRect(0, 0, src.cols, src.rows);
-	std::vector<ArmorBox*> armorBoxes;
+	std::vector<ArmorBoxPtr> armorBoxes;
 	for (int i = 0; i < lightbars.size() - 1; ++i)
 	{
 		const Lightbar& barLeft = lightbars.at(i);
@@ -339,8 +339,7 @@ std::vector<ArmorBox*> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars)
 				numVertices[1] = rectBarLeftExtend.points[1];
 				numVertices[2] = rectBarLeftExtend.points[2];
 				numVertices[3] = rectBarRightExtend.points[3];
-
-				ArmorBox *armorBox = new ArmorBox(barLeft.color, std::make_pair(barLeft, barRight), numVertices);
+				ArmorBoxPtr armorBox(new ArmorBox(barLeft.color, std::make_pair(barLeft, barRight), numVertices));
 				armorBox->roi = src(armorBox->boundingRect & screenSpaceRect);
 				// armorBox->numVertices = {};
 				/**
@@ -371,8 +370,7 @@ std::vector<ArmorBox*> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbars)
 				armorBox->boundingRect.width+=8;
 				armorBox->boundingRect.height+=8;
 
-				armorBoxes.push_back(armorBox);
-				delete armorBox;
+				armorBoxes.push_back(std::move(armorBox));
 			}
 			catch (cv::Exception e)
 			{
@@ -390,10 +388,10 @@ bool isSameArmorBox(const ArmorBox &box1, const ArmorBox &box2)
 	auto dist = box1.rect.center - box2.rect.center;
 	return (dist.x * dist.x + dist.y * dist.y) < 9;
 }
-std::vector<ArmorBox*> Sagitari::findArmorBoxes(cv::Mat &src, const Lightbars &lightbars)
+std::vector<ArmorBoxPtr> Sagitari::findArmorBoxes(cv::Mat &src, const Lightbars &lightbars)
 {
-	std::vector<ArmorBox*> result;
-	for (ArmorBox *box : matchArmorBoxes(src, lightbars))
+	std::vector<ArmorBoxPtr> result;
+	for (ArmorBoxPtr &box : matchArmorBoxes(src, lightbars))
 	{
 		// Color filter
 		if(box->color != this->targetColor) continue;
@@ -401,26 +399,7 @@ std::vector<ArmorBox*> Sagitari::findArmorBoxes(cv::Mat &src, const Lightbars &l
 		box->type = getArmorBoxType(*box, src, *this);
 		// if (box.type == ArmorBox::Type::UNKNOW) continue;
 		box->updateScore();
-		result.push_back(box);
+		result.push_back(std::move(box));
 	}
-	// std::vector<std::vector<ArmorBox*>::iterator> boxesToRemove;
-	// for(auto box1 = result.begin(); box1 != result.end(); box1++) {
-	// 	for(auto box2 = box1; box2 != result.end(); box2++) {
-	// 		if(box1 == box2) continue;
-	// 		if(isSameArmorBox(*box1, *box2)) {
-	// 			if(box1->score >= box2->score) {
-	// 				boxesToRemove.push_back(box2);
-	// 			}
-	// 			else
-	// 			{
-	// 				boxesToRemove.push_back(box1);
-	// 			}
-	// 		}
-	// 	}
-	// }
-	// for (const auto box : boxesToRemove)
-	// {
-	// 	result.erase(box);
-	// }
 	return result;
 }

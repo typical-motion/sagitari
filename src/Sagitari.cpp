@@ -28,24 +28,24 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 			SAG_TIMINGM("Find lightbars ", tmp, 1, {
 				lightbars = this->findLightbars(input);
 			})
-			std::vector<ArmorBox*> boxes;
+			std::vector<ArmorBoxPtr> boxes;
 			SAG_TIMINGM("Find Armorboxes", tmp, 2, {
 				boxes = this->findArmorBoxes(input, lightbars);
 			})
 			// Select the best one.
 			if (boxes.size() > 0)
 			{
-				ArmorBox box = *boxes.at(0);
-				drawPoints(box.numVertices, tmp);
+				ArmorBoxPtr box = std::move(boxes.at(0));
+				drawPoints(box->numVertices, tmp);
 
 				// 进入追踪模式
 				this->trackingSession->reset();
-				cv::rectangle(tmp, box.boundingRect, cv::Scalar(165, 100, 180), 1);
+				cv::rectangle(tmp, box->boundingRect, cv::Scalar(165, 100, 180), 1);
 				SAG_TIMINGM("Tracker Intialization", tmp, 3, {
-					this->initializeTracker(input, box.boundingRect & screenSpaceRect);
+					this->initializeTracker(input, box->boundingRect & screenSpaceRect);
 				})
-				this->trackingSession->update(input, box);
-				this->aimAndFire(box);
+				this->trackingSession->update(input, *box);
+				this->aimAndFire(*box);
 			}
 			else
 			{
@@ -57,7 +57,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 			SAG_LOGM(Logger::Tag::L_INFO, "Enter tracking mode...", tmp);
 			cv::Rect2d rect;
 			// SAG_TIMINGM("Track a frame", tmp, 1, {
-				ArmorBox *box = NULL;
+				ArmorBoxPtr box = NULL;
 				if (this->tracker->update(input, rect))
 				{
 					const float resizeFactor = 2.345;
@@ -73,14 +73,14 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 					cv::Mat reROI = input(nearbyRect);
 
 					Lightbars lightbars = this->findLightbars(reROI);
-					std::vector<ArmorBox*> boxes = this->findArmorBoxes(reROI, lightbars);
+					std::vector<ArmorBoxPtr> boxes = this->findArmorBoxes(reROI, lightbars);
 					for (auto &box : boxes)
 					{
 						box->relocateROI(nearbyRect.x, nearbyRect.y);
 					}
 					
 					if(boxes.size() > 0) {
-						box = boxes.at(0);
+						box = std::move(boxes.at(0));
 						this->initializeTracker(input, box->boundingRect & screenSpaceRect);  	// Restart Trracking to improve accuracy
 						this->trackingSession->update(input, *box);
 					} else {
