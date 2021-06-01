@@ -4,13 +4,13 @@
 #pragma once
 #include <ros/ros.h>
 #include <opencv2/opencv.hpp>
-#include <opencv2/tracking.hpp>
+#include "kcf/kcf.hpp"
 #include <sagitari_debug/sagitari_img_debug.h>
 #include <image_transport/image_transport.h>
 #include <message_filters/subscriber.h>
 #include <uart_process_2/uart_send.h>
 #include <uart_process_2/uart_receive.h>
-
+#include <chrono>
 #include "loggging.h"
 #include "shape.h"
 
@@ -135,7 +135,8 @@ public:
 
 private:
 	IdentityColor targetColor;				// 目标颜色
-	cv::Ptr<cv::Tracker> tracker;			// 追踪器
+	// cv::Ptr<cv::Tracker> tracker;			// 追踪器
+	std::shared_ptr<KCF> tracker;
 
 	cv::Mat hsvBinImage;					// HSV预处理二值图
 	cv::Mat rbgBinImage;					// RBG预处理二值图

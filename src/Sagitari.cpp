@@ -58,8 +58,9 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 			SAG_LOGM(Logger::Tag::L_INFO, "Enter tracking mode...", tmp);
 			cv::Rect2d rect;
 			// SAG_TIMINGM("Track a frame", tmp, 1, {
-				if (this->tracker->update(input, rect))
+				if (true)
 				{
+					rect = this->tracker->Update(input);
 					const float resizeFactor = 2.345;
 					cv::Point nearbyRectCenter = (rect.tl() + rect.br()) / 2;
 					cv::Rect nearbyRect(rect);
@@ -101,6 +102,9 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 						this->cancelTracking();							
 					} else {
 						drawPoints(box->numVertices, tmp);
+						box->lightbars.first.rectangle.draw(tmp);
+						box->lightbars.second.rectangle.draw(tmp);
+						cv::putText(tmp, std::to_string(box->spinYaw), cv::Point(240, 240), cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(100, 160, 180));
 						box->boundingRect &= screenSpaceRect;
 						
 						this->aimAndFire(*box);
@@ -141,11 +145,15 @@ void Sagitari::aimAndFire(const cv::Point2f &point, double distance)
 void Sagitari::initializeTracker(const cv::Mat &src, const cv::Rect &roi)
 {
 	this->state = Sagitari::State::TRACKING;
+	/*
 	cv::TrackerKCF::Params params;
 	params.resize = true;
 	params.detect_thresh = 0.75;
 	this->tracker = cv::TrackerKCF::create(params);
 	this->tracker->init(src, roi);
+	*/
+	this->tracker = std::shared_ptr<KCF>(new KCF("linear", "gray"));
+	this->tracker->Init(src, roi);
 }
 void Sagitari::cancelTracking()
 {
@@ -153,6 +161,7 @@ void Sagitari::cancelTracking()
 	this->targetTo(0, 0, 0, false);
 }
 void Sagitari::update(const uart_process_2::uart_receive& receive) {
+	
 	if(receive.red_blue == 1) {
 		std::cout << "寻找目标颜色：蓝色" << std::endl; 
 		this->targetColor = IdentityColor::IDENTITY_BLUE;

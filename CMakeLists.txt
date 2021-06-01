@@ -149,6 +149,8 @@ add_executable(${PROJECT_NAME}_node
     "src/TrackingSession.cpp"
     "src/anti_top.cpp"
     "src/targetTo.cpp"
+    "src/kcf/gradientMex.cpp"
+    "src/kcf/kcf.cpp"
 #    "src/device/ros.cpp"
 #    "src/device/io.cpp"
 )
