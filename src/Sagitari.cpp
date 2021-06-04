@@ -1,4 +1,4 @@
-﻿// Sagitari.cpp : Defines the entry point for the application.
+// Sagitari.cpp : Defines the entry point for the application.
 //
 #include "Sagitari.h"
 #include "TrackingSession.h"
@@ -9,7 +9,6 @@
 #include <cv_bridge/cv_bridge.h>
 
 using namespace std;
-bool isAntiSpinnerMode = false;
 Sagitari::Sagitari(IdentityColor targetColor) : targetColor(targetColor)
 {
 	this->state = Sagitari::State::SEARCHING;
@@ -99,7 +98,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 			{
 				drawPoints(box->numVertices, tmp);
 				cv::putText(tmp, std::to_string(box->spinYaw), cv::Point(240, 240), cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(100, 160, 180));
-				if (isAntiSpinnerMode) // Anti Spinner Mode
+				this->if (isAntiSpinnerMode) // Anti Spinner Mode
 				{
 					cv::putText(tmp, "Anti Spinner Mode Activated", cv::Point(100, 100), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 255));
 					if (box->spinYaw >= 65 && box->spinYaw <= 100)
@@ -107,7 +106,6 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 					if (box->spinYaw >= 89 && box->spinYaw <= 99)
 					{
 						cv::putText(tmp, "Following", cv::Point(100, 130), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 255));
-						suggestFire = true;
 						this->aimAndFire(*box);
 					}
 					else
@@ -138,7 +136,7 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 void Sagitari::aimAndFire(const ArmorBox &box)
 {
 	// 拟合结果
-	double distance = 4939.6 * pow(box.lightbars.first.rectangle.height(), -0.948);
+	double distance = 4939.6 * pow(max(box.lightbars.first.rectangle.height(), box.lightbars.second.rectangle.height()), -0.948);
 	cv::Point acutalTarget = cv::Point(box.lightbars.first.rect.center + box.lightbars.second.rect.center) / 2.0;
 	this->aimAndFire(acutalTarget, distance);
 }
@@ -147,13 +145,7 @@ void Sagitari::aimAndFire(const cv::Point2f &point, double distance)
 	std::vector<double> angles = this->getAngle(point);
 	if (angles.size() >= 2)
 	{
-		//temp writing for jump
-		if (angles[0] == 12 || angles[1] == 12 || angles[0] == -12 || angles[1] == -12)
-			angles = this->lastAngles;
-
 		this->targetTo(angles[0], angles[1], distance, true);
-		this->lastShot = point;
-		this->lastAngles = angles;
 	}
 }
 void Sagitari::initializeTracker(const cv::Mat &src, const cv::Rect &roi)
@@ -170,7 +162,7 @@ void Sagitari::cancelTracking()
 }
 void Sagitari::update(const uart_process_2::uart_receive &receive)
 {
-	isAntiSpinnerMode = receive.mod == 5;
+	this->isAntiSpinnerMode = receive.mod == 5;
 	if (receive.red_blue != 1)
 	{
 		std::cout << "寻找目标颜色：蓝色" << std::endl;

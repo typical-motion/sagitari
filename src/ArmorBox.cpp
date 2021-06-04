@@ -1,5 +1,6 @@
 #include "Sagitari.h"
 #include "imgproc.h"
+#include <cmath>
 ArmorBox::ArmorBox(const IdentityColor& clr, const std::pair<Lightbar, Lightbar>& lbs, cv::Point vertices[4]) : color(clr), lightbars(lbs) {
 	type = ArmorBox::Type::UNKNOW;
 	for (int i = 0; i < 4; i++)

@@ -64,9 +64,16 @@ public:
 	double score = 0;
 	bool isLarge = 0;
 	cv::Size size; // 装甲板长宽
+<<<<<<< HEAD
 	float spinYaw = 2;
 
 	ArmorBox(const IdentityColor&, const std::pair<Lightbar, Lightbar>&, cv::Point[4]);
+=======
+	float spinYaw;
+
+	ArmorBox(const IdentityColor&, const std::pair<Lightbar, Lightbar>&, cv::Point[4]);
+	~ArmorBox();
+>>>>>>> device/hero/1
 	/**
 	 * 调整 x, y 的偏移量
 	 **/
@@ -136,21 +143,22 @@ public:
 	void targetTo(double yaw, double pitch, double distance, bool hasTarget);
 	void update(const uart_process_2::uart_receive&);
 
+	bool suggestFire;
+
 private:
 	IdentityColor targetColor;				// 目标颜色
 	// cv::Ptr<cv::Tracker> tracker;			// 追踪器
-	std::shared_ptr<KCF> tracker;
+	std::shared_ptr<KCF> tracker;			// 追踪器
 
 	cv::Mat hsvBinImage;					// HSV预处理二值图
 	cv::Mat rbgBinImage;					// RBG预处理二值图
 
-	cv::Point lastShot;
-	std::vector<double> lastAngles;
 	TrackingSession *trackingSession;
 
 	bool suggestFire;
 	uart_process_2::uart_send uartSent;
 	
+	bool isAntiSpinnerMode = false;
 
 	void initializeTracker(const cv::Mat& src, const cv::Rect& roi); // 初始化追踪器
 

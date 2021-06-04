@@ -326,7 +326,6 @@ std::vector<ArmorBoxPtr> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbar
 			
 			Lightbars pair_blobs = {lightbars.at(i), lightbars.at(j)};
 
-
 			Rectangle rectBarLeftExtend(barLeftExtend);
 			Rectangle rectBarRightExtend(barRightExtend);
 
@@ -345,7 +344,6 @@ std::vector<ArmorBoxPtr> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbar
 				numVertices[1] = rectBarLeftExtend.points[1];
 				numVertices[2] = rectBarLeftExtend.points[2];
 				numVertices[3] = rectBarRightExtend.points[3];
-
 				ArmorBoxPtr armorBox(new ArmorBox(barLeft.color, std::make_pair(barLeft, barRight), numVertices));
 				armorBox->roi = src(armorBox->boundingRect & screenSpaceRect);
 				// armorBox->numVertices = {};
@@ -384,6 +382,8 @@ std::vector<ArmorBoxPtr> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbar
 				std::cout << "Exception" << std::endl;
 			}
 			CNT:; // continue;
+			
+
 		}
 	}
 	return armorBoxes;

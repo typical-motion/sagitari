@@ -43,7 +43,6 @@ vector<double> calc_angle(const Point& prev_point,const Point &current_point,dou
 	{
 		angle_vector[1] = angle_y_bias;
 	}
-
 	return angle_vector;
 }
 /*
