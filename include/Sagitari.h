@@ -64,7 +64,7 @@ public:
 	double score = 0;
 	bool isLarge = 0;
 	cv::Size size; // 装甲板长宽
-	float spinYaw;
+	float spinYaw = 2;
 
 	ArmorBox(const IdentityColor&, const std::pair<Lightbar, Lightbar>&, cv::Point[4]);
 	/**
@@ -74,6 +74,9 @@ public:
 
 	void updateScore();
 };
+
+typedef std::unique_ptr<ArmorBox> ArmorBoxPtr;
+
 static std::unordered_map<std::string, ArmorBox::Type> const ArmorBoxTypeTable = {
     {"NUMBER_1", ArmorBox::Type::NUMBER_1},
     {"NUMBER_2", ArmorBox::Type::NUMBER_2},
@@ -128,7 +131,7 @@ public:
 	void sendDebugImage(const cv::String&, const cv::Mat& mat);
 
 	Lightbars findLightbars(const cv::Mat&);					// 寻找灯条
-	std::vector<ArmorBox> findArmorBoxes(cv::Mat& mat, const Lightbars& lightbars);
+	std::vector<ArmorBoxPtr> findArmorBoxes(cv::Mat& mat, const Lightbars& lightbars);
 
 	void targetTo(double yaw, double pitch, double distance, bool hasTarget);
 	void update(const uart_process_2::uart_receive&);
@@ -142,7 +145,11 @@ private:
 	cv::Mat rbgBinImage;					// RBG预处理二值图
 
 	cv::Point lastShot;
+	std::vector<double> lastAngles;
 	TrackingSession *trackingSession;
+
+	bool suggestFire;
+	uart_process_2::uart_send uartSent;
 	
 
 	void initializeTracker(const cv::Mat& src, const cv::Rect& roi); // 初始化追踪器

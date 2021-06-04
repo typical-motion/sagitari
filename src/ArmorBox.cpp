@@ -11,7 +11,9 @@ ArmorBox::ArmorBox(const IdentityColor& clr, const std::pair<Lightbar, Lightbar>
 		(pointLength(this->numVertices[2], this->numVertices[3]) + pointLength(this->numVertices[1], this->numVertices[0])) / 2,
 		(pointLength(this->numVertices[2], this->numVertices[1]) + pointLength(this->numVertices[3], this->numVertices[0])) / 2
 	);
-	this->spinYaw = acos(this->size.height / this->size.width);
+	this->spinYaw = floor( 	this->lightbars.second.rectangle.angle() + 
+						atan((	this->lightbars.second.rectangle.points[2] - this->lightbars.first.rectangle.points[2]).y  
+						/	 ( 	this->lightbars.second.rectangle.points[2] - this->lightbars.first.rectangle.points[2]).x)  * 180 / 3.1415926);
 
 }
 void ArmorBox::updateScore() {
