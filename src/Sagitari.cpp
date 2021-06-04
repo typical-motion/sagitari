@@ -18,6 +18,11 @@ Sagitari::Sagitari(IdentityColor targetColor) : targetColor(targetColor)
 Sagitari &Sagitari::operator<<(cv::Mat &input)
 {
 	cv::Mat tmp = input.clone();
+	if(this->targetColor == IdentityColor::IDENTITY_RED) {
+		SAG_LOGM(Logger::Tag::L_INFO, "Target color: RED", tmp);
+	} else {
+		SAG_LOGM(Logger::Tag::L_INFO, "Target color: BLUE", tmp);
+	}
 	cv::Rect screenSpaceRect(0, 0, input.cols, input.rows);
 	try
 	{
@@ -25,9 +30,13 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 		{
 			SAG_LOGM(Logger::Tag::L_INFO, "Enter searching mode...", tmp);
 			Lightbars lightbars;
+			auto start = std::chrono::system_clock::now();
 			SAG_TIMINGM("Find lightbars ", tmp, 1, {
 				lightbars = this->findLightbars(input);
 			})
+			auto end   = std::chrono::system_clock::now();
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+			std::cout << "-Timing- elasped " << duration << std::endl;
 			std::vector<ArmorBoxPtr> boxes;
 			SAG_TIMINGM("Find Armorboxes", tmp, 2, {
 				boxes = this->findArmorBoxes(input, lightbars);
@@ -97,12 +106,11 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 			else
 			{
 				drawPoints(box->numVertices, tmp);
-				cv::putText(tmp, std::to_string(box->spinYaw), cv::Point(240, 240), cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(100, 160, 180));
-				this->if (isAntiSpinnerMode) // Anti Spinner Mode
+				cv::putText(tmp, "spinYaw: " + std::to_string(box->spinYaw), cv::Point(240, 240), cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(100, 160, 180));
+				if (this->isAntiSpinnerMode) // Anti Spinner Mode
 				{
 					cv::putText(tmp, "Anti Spinner Mode Activated", cv::Point(100, 100), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 255));
-					if (box->spinYaw >= 65 && box->spinYaw <= 100)
-						suggestFire = true;
+					suggestFire = box->spinYaw >= 65 && box->spinYaw <= 100;
 					if (box->spinYaw >= 89 && box->spinYaw <= 99)
 					{
 						cv::putText(tmp, "Following", cv::Point(100, 130), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 255));
@@ -110,7 +118,6 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 					}
 					else
 					{
-						suggestFire = false;
 						cv::putText(tmp, "Waiting", cv::Point(100, 130), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 255));
 						this->targetTo(0, 0, 0, true);
 					}

@@ -140,18 +140,20 @@ public:
 
 private:
 	IdentityColor targetColor;				// 目标颜色
-	// cv::Ptr<cv::Tracker> tracker;			// 追踪器
 	std::shared_ptr<KCF> tracker;			// 追踪器
 
 	cv::Mat hsvBinImage;					// HSV预处理二值图
-	cv::Mat rbgBinImage;					// RBG预处理二值图
+	cv::Mat bgrBinImage;					// BGR预处理二值图
 
 	TrackingSession *trackingSession;
 
-	bool suggestFire;
-	uart_process_2::uart_send uartSent;
+	uart_process_2::uart_send uartSent;			// 串口发送数据
+	uart_process_2::uart_receive uartReceive;	// 串口接受数据
 	
-	bool isAntiSpinnerMode = false;
+	bool isAntiSpinnerMode = false;			// 反小陀螺模式
+
+	void processBGRImage(const cv::Mat&, std::vector<std::vector<cv::Point>>&);					// 处理RBG图形
+	void processHSVImage(const cv::Mat&, std::vector<std::vector<cv::Point>>&);					// 处理HSV图形
 
 	void initializeTracker(const cv::Mat& src, const cv::Rect& roi); // 初始化追踪器
 

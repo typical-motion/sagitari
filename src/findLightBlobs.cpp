@@ -1,17 +1,7 @@
 #include "Sagitari.h"
 #include <opencv2/opencv.hpp>
+#include <thread>
 #include "imgproc.h"
-static double lw_rate(const cv::RotatedRect &rect)
-{
-    if (rect.angle > -90.0)
-    {
-        return rect.size.width / rect.size.height;
-    }
-    else
-    {
-        return rect.size.height / rect.size.width;
-    }
-}
 static IdentityColor get_blob_color(const cv::Mat &src, const cv::RotatedRect &blobPos)
 {
     auto region = blobPos.boundingRect();
@@ -34,19 +24,14 @@ static IdentityColor get_blob_color(const cv::Mat &src, const cv::RotatedRect &b
         return IdentityColor::IDENTITY_BLUE;
     }
 }
-// �������������С��Ӿ������֮�ￄ1�7
-static double areaRatio(const std::vector<cv::Point> &contour, const cv::RotatedRect &rect)
-{
-    return cv::contourArea(contour) / rect.size.area();
-}
 // �ж������Ƿ�Ϊһ������
 static bool isValidLightBlob(const std::vector<cv::Point> &contour, const cv::RotatedRect &rect, cv::Mat &mask)
 {
     Rectangle rectangle(rect);
     if (!(55 <= rectangle.angle() && rectangle.angle() <= 135) && !(-135 <= rectangle.angle() && rectangle.angle() <= -55))
         return false;
-    if(rectangle.height() < (rectangle.width() * 1.35)) return false;
-    // if(std::max(rect.size.height, rect.size.width) < 14) return false;
+    if (rectangle.height() < (rectangle.width() * 1.35))
+        return false;
     //TODO 根据长度分档
     if (!(2. < rectangle.ratio() && rectangle.ratio() <= 15))
         return false;
@@ -76,109 +61,94 @@ cv::Mat hsvFilter(const cv::Mat &src, IdentityColor mode)
     }
     return outImage;
 }
+
+void Sagitari::processBGRImage(const cv::Mat &src, std::vector<std::vector<cv::Point>> &contours)
+{
+
+    std::vector<cv::Mat> channels;
+    cv::split(src, channels);
+    cv::Mat colorChannel = channels[this->targetColor == IdentityColor::IDENTITY_BLUE ? 0 : 2];
+    int lightThreshold = this->targetColor == IdentityColor::IDENTITY_BLUE ? 180 : 160;
+    cv::threshold(colorChannel, this->bgrBinImage, lightThreshold, 255, cv::THRESH_BINARY);
+
+    // 形态学运算会改变图像的矩形拟合结果
+    static cv::Mat morphKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+    static cv::Mat dilateLightKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(1, 1));
+    // cv::morphologyEx(this->bgrBinImage, this->bgrBinImage, cv::MORPH_CLOSE, morphKernel);
+    // cv::morphologyEx(this->bgrBinImage, this->bgrBinImage, cv::MORPH_OPEN, morphKernel);
+    //  cv::dilate(this->bgrBinImage, this->bgrBinImage, dilateLightKernel);
+
+    std::vector<cv::Vec4i> hierarchy;
+    cv::findContours(this->bgrBinImage, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_NONE);
+}
+
+void Sagitari::processHSVImage(const cv::Mat &src, std::vector<std::vector<cv::Point>> &contours)
+{
+    this->hsvBinImage = hsvFilter(src, this->targetColor);
+
+    static cv::Mat dilateKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
+    cv::dilate(this->hsvBinImage, this->hsvBinImage, dilateKernel);
+
+    std::vector<cv::Vec4i> hierarchy;
+    cv::findContours(this->hsvBinImage, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_NONE);
+}
 Lightbars Sagitari::findLightbars(const cv::Mat &src)
 {
     cv::Mat tmp = src;
+    std::vector<std::vector<cv::Point>> contoursBGR, contoursHSV;
+    std::thread threadBGR(&Sagitari::processBGRImage, this, std::ref(src), std::ref(contoursBGR));
+    std::thread threadHSV(&Sagitari::processHSVImage, this, std::ref(src), std::ref(contoursHSV));
+    threadBGR.join();
+    threadHSV.join();
 
-    Lightbars light_blobs;
-    cv::Mat color_channel;
-    std::vector<cv::Mat> channels;
-    cv::split(src, channels);
-    std::cerr << "Ready to split " << src.size << std::endl;
-    if(channels.size() >= 3) {
-        if (this->targetColor == IdentityColor::IDENTITY_BLUE)
-        {
-            color_channel = channels[0];
-        }
-        else if (this->targetColor == IdentityColor::IDENTITY_RED)
-        {
-            color_channel = channels[2];
-        }
-    } else {
-        std::cerr << "src.channels() = " << src.channels() << std::endl;
-        std::cerr << "channels.size() = " << channels.size() << std::endl;
-    }
-    std::cerr << "Success to split" << std::endl;
-    
+    if (this->bgrBinImage.empty() || this->hsvBinImage.empty())
+        return {};
+    cv::Mat binImage;
+    cv::hconcat(this->bgrBinImage, this->hsvBinImage, binImage);
+    this->sendDebugImage("binImage", binImage);
 
-    int light_threshold;
-    if (this->targetColor == IdentityColor::IDENTITY_BLUE)
-    {
-        light_threshold = 180;
-    }
-    else
-    {
-        light_threshold = 160;
-    }
+    Lightbars blobsBGR, blobsHSV;
+    SAG_TIMING("Process light contours",
+               {
+                   for (int i = 0; i < contoursBGR.size(); i++)
+                   {
+                       cv::RotatedRect rect = cv::minAreaRect(contoursBGR[i]);
+                       if (isValidLightBlob(contoursBGR[i], rect, tmp))
+                       {
+                           blobsBGR.emplace_back(
+                               rect, get_blob_color(src, rect));
+                       }
+                   }
+               })
 
-
-    cv::threshold(color_channel, this->rbgBinImage, light_threshold, 255, cv::THRESH_BINARY); // ��ֵ����Ӧͨ��
-    this->hsvBinImage = hsvFilter(src, this->targetColor);
-    SAG_TIMING("Process open-close calcuation", {
-        static cv::Mat morphKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
-        static cv::Mat dilateKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
-        static cv::Mat dilateLightKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(1, 1));
-        // cv::morphologyEx(this->rbgBinImage, this->rbgBinImage, cv::MORPH_CLOSE, morphKernel);
-        // cv::morphologyEx(this->rbgBinImage, this->rbgBinImage, cv::MORPH_OPEN, morphKernel);
-        cv::dilate(this->hsvBinImage, this->hsvBinImage, dilateKernel);
-        //  cv::dilate(this->rbgBinImage, this->rbgBinImage, dilateLightKernel);
-    })
-
-    if (this->rbgBinImage.empty())
-        return light_blobs; // ��������
-    if (this->hsvBinImage.empty())
-        return light_blobs;
-    // cv::Mat binImage;
-    // cv::hconcat(this->rbgBinImage, this->hsvBinImage, binImage);
-    // this->sendDebugImage("binImage", binImage);
-
-    // ʹ��������ͬ�Ķ�ֵ����ֵͬʱ���е�����ȡ�����ٻ������նԶ�ֵ�����������Ӱ�졄1�7
-    // ͬʱ�޳��ظ��ĵ������޳�������㣬���������ҳ����ĵ���ȡ�����ￄ1�7
-    std::vector<std::vector<cv::Point>> light_contours_light, light_contours_dim, light_contours_contour;
-    Lightbars light_blobs_light, light_blobs_dim, light_blobs_contour;
-    std::vector<cv::Vec4i> hierarchy_light, hierarchy_dim, hierarchy_contour;
-
-    cv::findContours(this->rbgBinImage, light_contours_light, hierarchy_light, cv::RETR_TREE, cv::CHAIN_APPROX_NONE);
-    cv::findContours(this->hsvBinImage, light_contours_dim, hierarchy_dim, cv::RETR_TREE, cv::CHAIN_APPROX_NONE);
-    // cv::findContours(this->contourBinImage, light_contours_contour, hierarchy_contour, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
-
-    SAG_TIMING("Process light contours", {
-        for (int i = 0; i < light_contours_light.size(); i++)
-        {
-            cv::RotatedRect rect = cv::minAreaRect(light_contours_light[i]);
-            if (isValidLightBlob(light_contours_light[i], rect, tmp))
-            {
-                light_blobs_light.emplace_back(
-                    rect, get_blob_color(src, rect));
-            }
-        }
-    })
-
-    SAG_TIMING("Process dim contours", {
-        for (int i = 0; i < light_contours_dim.size(); i++)
-        {
-            cv::RotatedRect rect = cv::minAreaRect(light_contours_dim[i]);
-                if (isValidLightBlob(light_contours_dim[i], rect, tmp))
-                {
-                    light_blobs_dim.emplace_back(
-                        rect, get_blob_color(src, rect));
-                }
-        }
-    })
-    Lightbars resultLightbars, resultFinalLightbars;
-    SAG_TIMING("Remove duplicated contours", {
-        for (int l = 0; l != light_blobs_light.size(); l++)
-        {
-            for (int d = 0; d != light_blobs_dim.size(); d++)
-            {
-                if (isSameBlob(light_blobs_light[l], light_blobs_dim[d]))
-                {
-                    resultLightbars.emplace_back(light_blobs_light[l]);
-                    break;
-                }
-            }
-        }
-    })
-    sort(resultLightbars.begin(), resultLightbars.end(), [](Lightbar a, Lightbar b) { return a.rect.center.x < b.rect.center.x; });
+    SAG_TIMING("Process dim contours",
+               {
+                   for (int i = 0; i < contoursHSV.size(); i++)
+                   {
+                       cv::RotatedRect rect = cv::minAreaRect(contoursHSV[i]);
+                       if (isValidLightBlob(contoursHSV[i], rect, tmp))
+                       {
+                           blobsHSV.emplace_back(
+                               rect, get_blob_color(src, rect));
+                       }
+                   }
+               })
+    Lightbars resultLightbars;
+    SAG_TIMING("Remove duplicated contours",
+               {
+                   for (int l = 0; l != blobsBGR.size(); l++)
+                   {
+                       for (int d = 0; d != blobsHSV.size(); d++)
+                       {
+                           if (isSameBlob(blobsBGR[l], blobsHSV[d]))
+                           {
+                               resultLightbars.emplace_back(blobsBGR[l]);
+                               break;
+                           }
+                       }
+                   }
+               })
+    sort(resultLightbars.begin(), resultLightbars.end(), [](Lightbar a, Lightbar b)
+         { return a.rect.center.x < b.rect.center.x; });
     return resultLightbars;
 }
