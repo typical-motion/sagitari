@@ -64,16 +64,9 @@ public:
 	double score = 0;
 	bool isLarge = 0;
 	cv::Size size; // 装甲板长宽
-<<<<<<< HEAD
-	float spinYaw = 2;
-
-	ArmorBox(const IdentityColor&, const std::pair<Lightbar, Lightbar>&, cv::Point[4]);
-=======
 	float spinYaw;
 
 	ArmorBox(const IdentityColor&, const std::pair<Lightbar, Lightbar>&, cv::Point[4]);
-	~ArmorBox();
->>>>>>> device/hero/1
 	/**
 	 * 调整 x, y 的偏移量
 	 **/
