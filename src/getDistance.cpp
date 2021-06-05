@@ -2,6 +2,10 @@
 #include <vector>
 using namespace std;
 using namespace cv;
+double Sagitari::getDistance(const ArmorBox& box) {
+	return 4939.6 * pow(max(box.lightbars.first.rectangle.height(), box.lightbars.second.rectangle.height()), -0.948);
+}
+/*
 double Sagitari::getDistance(ArmorBox box)
 {
     double realistic_distance;

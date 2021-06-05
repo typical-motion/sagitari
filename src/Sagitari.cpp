@@ -2,6 +2,7 @@
 //
 #include "Sagitari.h"
 #include "TrackingSession.h"
+#include "EulerAngle.h"
 
 #include "imgproc.h"
 #include <opencv2/opencv.hpp>
@@ -55,8 +56,8 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 				SAG_TIMINGM("Tracker Intialization", tmp, 3, {
 					this->initializeTracker(input, box->boundingRect & screenSpaceRect);
 				})
-				this->trackingSession->update(input, *box);
-				this->aimAndFire(*box);
+				EulerAngle angle = this->aimAndFire(*box);
+				this->trackingSession->init(angle);
 			}
 			else
 			{
@@ -92,7 +93,6 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 			{
 				box = std::move(boxes.at(0));
 				this->initializeTracker(input, box->boundingRect & screenSpaceRect); // Restart Trracking to improve accuracy
-				this->trackingSession->update(input, *box);
 			}
 			else
 			{
@@ -119,18 +119,20 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 					else
 					{
 						cv::putText(tmp, "Waiting", cv::Point(100, 130), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 255));
-						this->targetTo(0, 0, 0, true);
+						this->targetTo({0, 0}, {0, 0}, 0, false, 0);
 					}
 				}
 				else // Normal Targeting Mode
 				{
-					this->aimAndFire(*box);
+					this->aimAndFire(*box, true);
 				}
 			}
 			// })
 		}
 
-		cv::putText(tmp, "yaw: " + std::to_string(uartSent.xdata) + " pitch: " + std::to_string(uartSent.ydata) + " dst: " + std::to_string(uartSent.zdata), cv::Point(100, 400), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 255));
+		cv::putText(tmp, "yaw: " + std::to_string(uartReceive.yaw + uartSent.curYaw) 
+					+ " pitch: " + std::to_string(uartReceive.pitch + uartSent.curPitch)
+					+ " dst: " + std::to_string(uartSent.curDistance), cv::Point(100, 400), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 255));
 		this->sendDebugImage("Tracking", tmp);
 	}
 	catch (cv::Exception e)
@@ -140,20 +142,23 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 	return *this;
 }
 
-void Sagitari::aimAndFire(const ArmorBox &box)
+EulerAngle Sagitari::aimAndFire(const ArmorBox &box, bool predict)
 {
-	// 拟合结果
-	double distance = 4939.6 * pow(max(box.lightbars.first.rectangle.height(), box.lightbars.second.rectangle.height()), -0.948);
 	cv::Point acutalTarget = cv::Point(box.lightbars.first.rect.center + box.lightbars.second.rect.center) / 2.0;
-	this->aimAndFire(acutalTarget, distance);
+	return this->aimAndFire(acutalTarget, this->getDistance(box), predict);
 }
-void Sagitari::aimAndFire(const cv::Point2f &point, double distance)
+EulerAngle Sagitari::aimAndFire(const cv::Point2f &point, double distance, bool predict)
 {
-	std::vector<double> angles = this->getAngle(point);
-	if (angles.size() >= 2)
-	{
-		this->targetTo(angles[0], angles[1], distance, true);
+	EulerAngle current = this->getAngle(point);
+	EulerAngle predictAngle;
+	int predictLatency = 0;
+	if(predict) {
+		this->trackingSession->update(current);
+		predictAngle = this->trackingSession->predict();
+		predictLatency = this->trackingSession->getPredictLatency();
 	}
+	this->targetTo(current, predictAngle, distance, true, predictLatency);
+	return current;
 }
 void Sagitari::initializeTracker(const cv::Mat &src, const cv::Rect &roi)
 {
@@ -164,7 +169,7 @@ void Sagitari::initializeTracker(const cv::Mat &src, const cv::Rect &roi)
 void Sagitari::cancelTracking()
 {
 	this->state = Sagitari::State::SEARCHING;
-	this->targetTo(0, 0, 0, false);
+	this->targetTo({0, 0}, {0, 0}, 0, false, 0);
 	suggestFire = false;
 }
 void Sagitari::update(const uart_process_2::uart_receive &receive)

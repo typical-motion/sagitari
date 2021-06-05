@@ -8,16 +8,16 @@ float toFixed(double in) {
     float result = (int)(in * 100);
     return result / 100;
 }
-void Sagitari::targetTo(double yaw, double pitch, double distance, bool hasTarget) {
-    if(yaw > -1 && yaw < 1) yaw = 0;
-    
+void Sagitari::targetTo(const EulerAngle& currentAngle, const EulerAngle& predictAngle, double distance, bool hasTarget, int predictLatency) {
     uart_process_2::uart_send send_msg;
-    send_msg.xdata = toFixed(-yaw);
-    send_msg.ydata = toFixed(pitch);
-    send_msg.zdata = distance;
-    send_msg.tdata = hasTarget;
-    send_msg.Cmdata = suggestFire;
+    send_msg.curYaw = toFixed(-currentAngle.yaw);
+    send_msg.curPitch = toFixed(currentAngle.pitch);
+    send_msg.curDistance = distance;
+    send_msg.time = hasTarget;
+    send_msg.attackFlag = suggestFire;
+    send_msg.predictYaw = predictAngle.yaw;
+    send_msg.predictPitch = predictAngle.pitch;
+    send_msg.predictLatency = predictLatency;
     this->uartPublisher.publish(send_msg);
     this->uartSent = send_msg;
-    std::cout << "targetTo: yaw=" << yaw << ", pitch=" << pitch << std::endl;
 }

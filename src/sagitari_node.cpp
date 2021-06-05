@@ -8,21 +8,31 @@
 #include <stdlib.h>
 #include <sys/signal.h>
 
-Sagitari sagitari(IdentityColor::IDENTITY_BLUE);
+uart_process_2::uart_receive currentReceive;
 
-void onCameraRawImageReceived(const sensor_msgs::ImageConstPtr &msg) {
-	double __timer_startAt = cv::getTickCount();
+Sagitari sagitari(IdentityColor::IDENTITY_RED);
+
+void onCameraRawImageReceived(const sensor_msgs::ImageConstPtr &msg)
+{
+	auto start = std::chrono::system_clock::now();
+	sagitari.uartReceive = currentReceive;
 	sagitari << cv_bridge::toCvCopy(msg, "bgr8")->image;
-	clearScreen();	
-	std::cerr << " - Timing: All fps: " << std::to_string(1 / ((cv::getTickCount() - __timer_startAt) / cv::getTickFrequency())) << "." << std::endl;
+	clearScreen();
+	auto end = std::chrono::system_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 	
+	std::cerr << " - Timing: Total time elapsed: " << std::to_string(duration) << "ms." << std::endl;
 }
-void onUartMessageReceived(const uart_process_2::uart_receive &msg) {
+void onUartMessageReceived(const uart_process_2::uart_receive &msg)
+{
+	currentReceive = msg;
 	sagitari.update(msg);
 }
-void failSafe(int) {
-	std::cerr << "[FailSafe] I'm dying."  << std::endl;
-	sagitari.targetTo(0, 0, 0, false);
+void failSafe(int)
+{
+	std::cerr << "[FailSafe] I'm dying." << std::endl;
+	const EulerAngle failSafeAngle = {0, 0};
+	sagitari.targetTo(failSafeAngle, failSafeAngle, 0, false, 0);
 }
 int main(int argc, char *argv[])
 {
@@ -33,14 +43,12 @@ int main(int argc, char *argv[])
 	ros::NodeHandle nh;
 	image_transport::ImageTransport it(nh);
 
-	image_transport::Subscriber cameraRawImageSubscriber 
-									= it.subscribe("DahuaCamera/LowDims", 1, onCameraRawImageReceived);
+	image_transport::Subscriber cameraRawImageSubscriber = it.subscribe("DahuaCamera/LowDims", 1, onCameraRawImageReceived);
 
-	ros::Subscriber uartMessageSubsriber 
-									= nh.subscribe("uart_receive", 1, onUartMessageReceived);			//接收串口模式
-	sagitari.uartPublisher		 	= nh.advertise<uart_process_2::uart_send>("uart_send", 1); 			//初始化发送串口话题
-	sagitari.debugImagePublisher 	= nh.advertise<sagitari_debug::sagitari_img_debug>("Sagitari/debugImage", 1);
-	
+	ros::Subscriber uartMessageSubsriber = nh.subscribe("uart_receive", 1, onUartMessageReceived); //接收串口模式
+	sagitari.uartPublisher = nh.advertise<uart_process_2::uart_send>("uart_send", 1);			   //初始化发送串口话题
+	sagitari.debugImagePublisher = nh.advertise<sagitari_debug::sagitari_img_debug>("Sagitari/debugImage", 1);
+
 	ros::Rate rate(200);
 	while (ros::ok())
 	{

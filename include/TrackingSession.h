@@ -1,5 +1,6 @@
 #include <opencv2/opencv.hpp>
-
+#include <eigen3/Eigen/Dense>
+#include "EulerAngle.h"
 class Sagitari;
 class ArmorBox;
 
@@ -9,11 +10,23 @@ class TrackingSession {
 
         TrackingSession(Sagitari& sagitari);
 
-        cv::Point2f pointAt;
-        ArmorBox* lastArmorBox;
-        int errorFrames;
         void reset();
-        void update(const cv::Mat& src, const ArmorBox& armorBox);
-        ArmorBox* predictArmorBox(const cv::Rect& possibleRect);
-        // void update(const cv::Mat& src, const cv::Rect& roi);
+        void init(const EulerAngle&);
+        void update(const EulerAngle&);
+        uint64_t getPredictLatency();
+        EulerAngle predict();
+
+    private:
+        // Implementaion of an prediction algorithm
+        int k = 15;
+        cv::Mat matX;
+        cv::Mat matW;
+        cv::Mat matALeft;
+        cv::Mat matYaw, matPitch;
+
+        uint64_t startAt;
+        int count;
+
+        void shift(cv::Mat& mat);
+
 };

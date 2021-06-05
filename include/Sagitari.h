@@ -11,6 +11,7 @@
 #include <uart_process_2/uart_send.h>
 #include <uart_process_2/uart_receive.h>
 #include <chrono>
+#include "EulerAngle.h"
 #include "loggging.h"
 #include "shape.h"
 
@@ -93,20 +94,6 @@ static std::unordered_map<std::string, ArmorBox::Type> const ArmorBoxTypeTable =
     {"CHARACTER_DRONE", ArmorBox::Type::CHARACTER_DRONE},
 	{"GARBAGE_LIGHTBAR", ArmorBox::Type::UNKNOW}
 };
-/**
- * 设备接口
- **/
-class DeviceProvider {
-public:
-	virtual void targetTo(double yaw, double pitch, double targe_armor_distance) = 0;
-	
-	DeviceProvider& operator>>(cv::Mat& mat) {
-		input(mat);
-		return *this;
-	}
-private:
-	virtual void input(cv::Mat&) = 0;
-};
 
 // See TrackingSession.h
 class TrackingSession;
@@ -126,6 +113,9 @@ public:
 	State state;							// 射手状态
 	int errono;								// 最后一次错误代码
 
+	uart_process_2::uart_send uartSent;			// 串口发送数据
+	uart_process_2::uart_receive uartReceive;	// 串口接受数据
+
 	void cancelTracking();
 
 	void sendDebugImage(const cv::String&, const cv::Mat& mat);
@@ -133,7 +123,7 @@ public:
 	Lightbars findLightbars(const cv::Mat&);					// 寻找灯条
 	std::vector<ArmorBoxPtr> findArmorBoxes(cv::Mat& mat, const Lightbars& lightbars);
 
-	void targetTo(double yaw, double pitch, double distance, bool hasTarget);
+	void targetTo(const EulerAngle& currentAngle, const EulerAngle& predictAngle, double distance, bool hasTarget, int predictLatency);
 	void update(const uart_process_2::uart_receive&);
 
 	bool suggestFire;
@@ -146,9 +136,6 @@ private:
 	cv::Mat bgrBinImage;					// BGR预处理二值图
 
 	TrackingSession *trackingSession;
-
-	uart_process_2::uart_send uartSent;			// 串口发送数据
-	uart_process_2::uart_receive uartReceive;	// 串口接受数据
 	
 	bool isAntiSpinnerMode = false;			// 反小陀螺模式
 
@@ -162,45 +149,22 @@ private:
 	 * @param rect 目标位置
 	 * @return 距离
 	 **/
-	double getDistance(ArmorBox box);
+	double getDistance(const ArmorBox& box);
 	/**
 	 * 测角
 	 * @param rect 目标点
 	 * @return yaw, pitch
 	 **/
-	std::vector<double> getAngle(const cv::Point& point);
+	EulerAngle getAngle(const cv::Point& point);
 
-	void aimAndFire(const ArmorBox& box);
-	void aimAndFire(const cv::Point2f& point, double distance);
+	EulerAngle aimAndFire(const ArmorBox& box, bool predict = false);
+	EulerAngle aimAndFire(const cv::Point2f& point, double distance, bool predict = false);
 
 	double im_real_weights = 0;
 	double real_distance_height = 0.06;
 
 	
 };
-class IODeviceProvider : public DeviceProvider {
-public:
-	IODeviceProvider();
-	~IODeviceProvider();
-	void targetTo(double yaw, double pitch, double targe_armor_distance);
-private:
-	cv::VideoCapture capture;
-	cv::VideoWriter video;
-	cv::Mat process;
-	void input(cv::Mat&);
-};
-class ROSDeviceProvider : public DeviceProvider {
-public:
-	ROSDeviceProvider(Sagitari*);
-	~ROSDeviceProvider();
-	void targetTo(double yaw, double pitch, double targe_armor_distance);
-private:
-	void input(cv::Mat&);
-	ros::Publisher pub;
-	Sagitari* sagitari;
-
-};
-
 
 void calc_top_speed(ArmorBox box, cv::Mat &mat);
 bool detect_top(ArmorBox box);
