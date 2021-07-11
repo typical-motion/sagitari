@@ -1,7 +1,8 @@
 ﻿// Sagitari.h : Include file for standard system include files,
 // or project specific include files.
 
-#pragma once
+#ifndef H_SAGITARI
+#define H_SAGITARI
 #include <ros/ros.h>
 #include <opencv2/opencv.hpp>
 #include "kcf/kcf.hpp"
@@ -68,6 +69,7 @@ public:
 	float spinYaw;
 
 	ArmorBox(const IdentityColor&, const std::pair<Lightbar, Lightbar>&, cv::Point[4]);
+	ArmorBox(const IdentityColor&, const std::pair<Lightbar, Lightbar>&, cv::Point2f[4]);
 	/**
 	 * 调整 x, y 的偏移量
 	 **/
@@ -168,3 +170,4 @@ private:
 
 void calc_top_speed(ArmorBox box, cv::Mat &mat);
 bool detect_top(ArmorBox box);
+#endif
