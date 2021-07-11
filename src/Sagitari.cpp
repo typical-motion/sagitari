@@ -20,9 +20,9 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 {
 	cv::Mat tmp = input.clone();
 	if(this->targetColor == IdentityColor::IDENTITY_RED) {
-		SAG_LOGM(Logger::Tag::L_INFO, "Target color: RED", tmp);
+		SAG_LOGM(Logger::Tag::L_INFO, "                         Target color: RED", tmp);
 	} else {
-		SAG_LOGM(Logger::Tag::L_INFO, "Target color: BLUE", tmp);
+		SAG_LOGM(Logger::Tag::L_INFO, "                         Target color: BLUE", tmp);
 	}
 	cv::Rect screenSpaceRect(0, 0, input.cols, input.rows);
 	try
@@ -44,6 +44,10 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 			})
 
 			// Select the best one.
+			int _a = 1;
+			for(auto& box : boxes) {
+				cv::putText(tmp, std::to_string(_a++), box->rect.center, cv::FONT_HERSHEY_SIMPLEX, 3, cv::Scalar(200, 180, 200));
+			}
 			if (boxes.size() > 0)
 			{
 				ArmorBoxPtr box = std::move(boxes.at(0));
@@ -87,21 +91,29 @@ Sagitari &Sagitari::operator<<(cv::Mat &input)
 			for (ArmorBoxPtr &box : boxes)
 			{
 				box->relocateROI(nearbyRect.x, nearbyRect.y);
+				drawPoints(box->numVertices, tmp);
 			}
 
 			if (boxes.size() > 0)
 			{
 				box = std::move(boxes.at(0));
 				this->initializeTracker(input, box->boundingRect & screenSpaceRect); // Restart Trracking to improve accuracy
+				this->trackingSession->update(box);
 			}
 			else
 			{
 				// TODO: Attempt to predict a ArmorBox or simply give up.
+				
+				box = std::move(this->trackingSession->predictArmorBox());
 			}
 
 			if (box == NULL)
 			{
 				this->cancelTracking();
+				// Make a full search?
+				// We wish this search could get us a result near center point.
+				*this << input;
+				return *this;
 			}
 			else
 			{

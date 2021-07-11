@@ -3,6 +3,7 @@
 #include "EulerAngle.h"
 class Sagitari;
 class ArmorBox;
+typedef std::unique_ptr<ArmorBox> ArmorBoxPtr;
 
 class TrackingSession {
     public:
@@ -13,8 +14,10 @@ class TrackingSession {
         void reset();
         void init(const EulerAngle&);
         void update(const EulerAngle&);
+        void update(const ArmorBoxPtr&);
         uint64_t getPredictLatency();
         EulerAngle predict();
+        ArmorBoxPtr predictArmorBox();
 
     private:
         // Implementaion of an prediction algorithm
@@ -26,6 +29,9 @@ class TrackingSession {
 
         uint64_t startAt;
         int count;
+        int predictCount;
+
+        ArmorBoxPtr lastSuccessfulArmorBox;
 
         void shift(cv::Mat& mat);
 
