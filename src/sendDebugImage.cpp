@@ -3,6 +3,7 @@
 #include <sagitari_debug/sagitari_img_debug.h>
 
 void Sagitari::sendDebugImage(const cv::String& title, const cv::Mat& mat) {
+    // if(title != "Tracking") return;
     if(title != "Tracking" && title != "binImage") return;
     cv::Mat toMat;
     if(mat.channels() < 3) {
