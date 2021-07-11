@@ -395,6 +395,9 @@ bool isSameArmorBox(const ArmorBox &box1, const ArmorBox &box2)
 }
 std::vector<ArmorBoxPtr> Sagitari::findArmorBoxes(cv::Mat &src, const Lightbars &lightbars)
 {
+	#define WINDOW_WIDTH 1280
+	#define WINDOW_HEIGHT 720
+	static cv::Point centerPoint = cv::Point(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
 	std::vector<ArmorBoxPtr> result;
 	for (ArmorBoxPtr &box : matchArmorBoxes(src, lightbars, *this))
 	{
@@ -406,5 +409,8 @@ std::vector<ArmorBoxPtr> Sagitari::findArmorBoxes(cv::Mat &src, const Lightbars 
 		box->updateScore();
 		result.push_back(std::move(box));
 	}
+	std::sort(result.begin(), result.end(), [](ArmorBoxPtr& a, ArmorBoxPtr& b) {
+		return pointLength(centerPoint, a->rect.center) < pointLength(centerPoint, b->rect.center);
+	});
 	return result;
 }

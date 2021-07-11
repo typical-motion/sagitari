@@ -16,6 +16,7 @@ void TrackingSession::reset() {
 	this->matALeft.release();
 	this->matYaw.release();
 	this->matPitch.release();
+	this->lastSuccessfulArmorBox.reset();
 }
 
 void TrackingSession::init(const EulerAngle& current) {
@@ -45,14 +46,16 @@ void TrackingSession::update(const EulerAngle& current) {
 	this->shift(this->matPitch);
 	this->matYaw.at<double>(this->k - 1) = sagitari.uartReceive.yaw + current.yaw;
 	this->matPitch.at<double>(this->k - 1) =  sagitari.uartReceive.pitch + current.pitch;
+
+	this->predictCount = 0;
 }
 EulerAngle TrackingSession::predict() {
     cv::Mat matAYaw = this->matALeft * this->matYaw;
     cv::Mat matAPitch = this->matALeft * this->matPitch;
 
 	EulerAngle predicted;
-	predicted.yaw = sagitari.uartReceive.yaw - matAYaw.at<double>(0) * pow(k + 1, 2) + matAYaw.at<double>(1) * (k + 1.) + matAYaw.at<double>(2);
-	predicted.pitch = sagitari.uartReceive.pitch - matAPitch.at<double>(0) * pow(k + 1, 2) + matAPitch.at<double>(1) * (k + 1.) + matAPitch.at<double>(2);
+	predicted.yaw = sagitari.uartReceive.yaw - (matAYaw.at<double>(0) * pow(k + 1, 2) + matAYaw.at<double>(1) * (k + 1.) + matAYaw.at<double>(2));
+	predicted.pitch = sagitari.uartReceive.pitch - (matAPitch.at<double>(0) * pow(k + 1, 2) + matAPitch.at<double>(1) * (k + 1.) + matAPitch.at<double>(2));
 	return predicted;
 	// double pitch = matA.at<double>(0) * pow(k + 2, 2) + matA.at<double>(1) * (k + 2.) + matA.at<double>(2);
 }
@@ -63,4 +66,14 @@ uint64_t TrackingSession::getPredictLatency() {
 void TrackingSession::shift(cv::Mat& mat) {
 	mat(cv::Rect(0, 1, 1, k - 1)).copyTo(mat);
 	mat.rows = k;
+}
+
+void TrackingSession::update(const ArmorBoxPtr& armorBox) {
+	this->lastSuccessfulArmorBox = std::make_unique<ArmorBox>(
+		armorBox->color, armorBox->lightbars, armorBox->numVertices
+	);
+}
+ArmorBoxPtr TrackingSession::predictArmorBox() {
+	this->predictCount++;
+	return std::move(this->lastSuccessfulArmorBox);
 }
