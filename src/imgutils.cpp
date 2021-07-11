@@ -26,6 +26,8 @@ void drawPoints(const cv::Point2f points[], const cv::Mat &out, const cv::Scalar
 			cv::line(out, points[i], points[j], color, 2);
 		}
 	}
+	cv::Point rectCenter = (points[0] + points[1] + points[2] + points[3]) / 4;
+	cv::line(out, rectCenter, cv::Point(out.cols, out.rows) / 2, cv::Scalar(160, 50, 190));
 }
 /*
 cv::RotatedRect adjustRotatedRect(const cv::RotatedRect& rect) {
