@@ -11,17 +11,28 @@
 uart_process_2::uart_receive currentReceive;
 
 Sagitari sagitari(IdentityColor::IDENTITY_RED);
+// Sagitari sagitari(IdentityColor::IDENTITY_BLUE);
+cv::Mat imageNoSignal;
 
 void onCameraRawImageReceived(const sensor_msgs::ImageConstPtr &msg)
 {
-	auto start = std::chrono::system_clock::now();
-	sagitari.uartReceive = currentReceive;
-	sagitari << cv_bridge::toCvCopy(msg, "bgr8")->image;
-	clearScreen();
-	auto end = std::chrono::system_clock::now();
-	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+	if(sagitari.disabled) {
+		sagitari.cancelTracking(); // Keep marking ending for sagitari to prevent unfinished <<
+		if(imageNoSignal.empty()) {
+			imageNoSignal = cv::imread("nosignal.jpg");
+		}
+		sagitari.sendDebugImage("Tracking", imageNoSignal);
+	} else {
+		auto start = std::chrono::system_clock::now();
+		sagitari.uartReceive = currentReceive;
+		sagitari << cv_bridge::toCvCopy(msg, "bgr8")->image;
+		clearScreen();
+		auto end = std::chrono::system_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		
+		std::cerr << " - Timing: Total time elapsed: " << std::to_string(duration) << "ms." << std::endl;
+	}
 	
-	std::cerr << " - Timing: Total time elapsed: " << std::to_string(duration) << "ms." << std::endl;
 }
 void onUartMessageReceived(const uart_process_2::uart_receive &msg)
 {

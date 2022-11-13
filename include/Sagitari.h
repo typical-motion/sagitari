@@ -35,6 +35,7 @@ public :
 
 };
 
+
 typedef std::vector<Lightbar> Lightbars;
 
 class ArmorBox {
@@ -61,12 +62,14 @@ public:
 	std::pair<Lightbar, Lightbar> lightbars;
 	IdentityColor color;
 	Type type;
+	int num;
 	cv::Mat roi, roiCard;
 	cv::Point2f numVertices[4];
 	double score = 0;
 	bool isLarge = 0;
 	cv::Size size; // 装甲板长宽
 	float spinYaw;
+	float deviationAngle;
 
 	ArmorBox(const IdentityColor&, const std::pair<Lightbar, Lightbar>&, cv::Point[4]);
 	ArmorBox(const IdentityColor&, const std::pair<Lightbar, Lightbar>&, cv::Point2f[4]);
@@ -95,6 +98,20 @@ static std::unordered_map<std::string, ArmorBox::Type> const ArmorBoxTypeTable =
     {"CHARACTER_OUTPOST", ArmorBox::Type::CHARACTER_OUTPOST},
     {"CHARACTER_DRONE", ArmorBox::Type::CHARACTER_DRONE},
 	{"GARBAGE_LIGHTBAR", ArmorBox::Type::UNKNOW}
+};
+/**
+ * 设备接口
+ **/
+class DeviceProvider {
+public:
+	virtual void targetTo(double yaw, double pitch, double targe_armor_distance) = 0;
+	
+	DeviceProvider& operator>>(cv::Mat& mat) {
+		input(mat);
+		return *this;
+	}
+private:
+	virtual void input(cv::Mat&) = 0;
 };
 
 // See TrackingSession.h
@@ -128,7 +145,11 @@ public:
 	void targetTo(const EulerAngle& currentAngle, const EulerAngle& predictAngle, double distance, bool hasTarget, int predictLatency);
 	void update(const uart_process_2::uart_receive&);
 
+	double averageFilter(double distance);
+
 	bool suggestFire;
+
+	bool disabled = false;							// 是否正常运作
 
 private:
 	IdentityColor targetColor;				// 目标颜色
@@ -139,7 +160,7 @@ private:
 
 	TrackingSession *trackingSession;
 	
-	bool isAntiSpinnerMode = false;			// 反小陀螺模式
+	bool isAntiSpinnerMode = false;			// 反小陀螺模式，上云台不实现
 
 	void processBGRImage(const cv::Mat&, std::vector<std::vector<cv::Point>>&);					// 处理RBG图形
 	void processHSVImage(const cv::Mat&, std::vector<std::vector<cv::Point>>&);					// 处理HSV图形
@@ -167,7 +188,4 @@ private:
 
 	
 };
-
-void calc_top_speed(ArmorBox box, cv::Mat &mat);
-bool detect_top(ArmorBox box);
 #endif

@@ -6,8 +6,7 @@
 using namespace std;
 using namespace cv;
 double angle_x_bias = 12, angle_y_bias = 12;
-#define WINDOW_WIDTH 1280
-#define WINDOW_HEIGHT 720
+// WINDOW_WIDTH 和 WINDOW_HEIGHT 已被移至 constants.h
 
 #define ERROR_POINT cv::Point()
 #define ERROR_RECT cv::Rect2d()

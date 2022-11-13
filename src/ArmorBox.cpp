@@ -15,7 +15,9 @@ ArmorBox::ArmorBox(const IdentityColor& clr, const std::pair<Lightbar, Lightbar>
 	this->spinYaw = floor( 	this->lightbars.second.rectangle.angle() + 
 						atan((	this->lightbars.second.rectangle.points[2] - this->lightbars.first.rectangle.points[2]).y  
 						/	 ( 	this->lightbars.second.rectangle.points[2] - this->lightbars.first.rectangle.points[2]).x)  * 180 / 3.1415926);
-
+	float delta_x = lbs.first.rect.center.x - lbs.second.rect.center.x;
+	float delta_y = lbs.first.rect.center.y - lbs.second.rect.center.y;
+	this->deviationAngle = abs(atan(delta_y / delta_x)) * 180 / CV_PI;
 }
 ArmorBox::ArmorBox(const IdentityColor& clr, const std::pair<Lightbar, Lightbar>& lbs, cv::Point2f vertices[4]) : color(clr), lightbars(lbs) {
 	type = ArmorBox::Type::UNKNOW;

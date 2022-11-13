@@ -1,4 +1,5 @@
 ﻿#include "imgproc.h"
+#include <Sagitari.h>
 #include <vector>
 #include <iostream>
 void drawRotatedRect(const cv::RotatedRect &rect, const cv::Mat &out, const cv::Scalar &color)
@@ -102,4 +103,15 @@ void gammaCorrection(const cv::Mat &src, cv::Mat &out, float gamma_)
 
 double pointLength(const cv::Point& p1, const cv::Point& p2) {
 	return sqrt(pow(p1.x - p2.x, 2) + pow(p1.y - p2.y, 2));
+}
+
+double drawArmorBox(const ArmorBox& box, const cv::Mat& dst) {
+	// drawPoints(box.numVertices, dst);
+	cv::Point2f center(0, 0);
+	for(int i = 0;i < 4; i++) {
+		center += box.numVertices[i];
+	}
+	
+	cv::putText(dst, "deviationAngle: " + std::to_string(box.deviationAngle), center / 4, cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(100, 160, 180));
+
 }

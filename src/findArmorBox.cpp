@@ -1,13 +1,19 @@
 #include "Sagitari.h"
 #include "imgproc.h"
-#include <opencv2/xfeatures2d.hpp>
+#include "mnist.h"
+// #include <opencv2/xfeatures2d.hpp>
 using namespace cv;
+
+mnist mnist("/home/nuc/sagitari_ws/svm2.xml");
+int thresh1 = 200,thresh2 = 48,blur_ = 310;
 
 /**
  * 加载标准装甲板模型文件
+ * 该方案已被放弃
  **/
 static std::map<ArmorBox::Type, std::vector<cv::Point>> loadStandardArmorBoxTemplate()
 {
+	/*
 	std::cout << "[INFO] Loading standard armorbox template..." << std::endl;
 	std::map<ArmorBox::Type, std::vector<cv::Point>> map;
 	FileStorage fs("./armorboxContours.yml", FileStorage::READ);
@@ -34,6 +40,7 @@ static std::map<ArmorBox::Type, std::vector<cv::Point>> loadStandardArmorBoxTemp
 	}
 	std::cout << "[INFO] Loaded standard armorbox template." << std::endl;
 	return map;
+	*/
 }
 static std::map<ArmorBox::Type, std::vector<cv::Point>> standardArmorBoxTemplate = loadStandardArmorBoxTemplate();
 
@@ -44,6 +51,7 @@ typedef std::pair<float, ArmorBox::Type> SimilaritySet;
  **/
 inline bool isValidAngle(const Lightbar &barLeft, const Lightbar &barRight, const Sagitari& sagitari)
 {
+	/*
 	if(sagitari.state == Sagitari::State::TRACKING) {
 		if(abs(barLeft.rectangle.angle() - barRight.rectangle.angle()) >= RECTS_ANGLES_TRACKING_TRESHOLD) {
 			return false;
@@ -53,7 +61,16 @@ inline bool isValidAngle(const Lightbar &barLeft, const Lightbar &barRight, cons
 			return false;
 		}
 	}
-	if((barLeft.rectangle.angle() > 90 && barRight.rectangle.angle() < 90) || (barRight.rectangle.angle() > 90 && barLeft.rectangle.angle() < 90)) {
+	*/
+	// if((floor(barLeft.rectangle.angle()) > 89 && floor(barRight.rectangle.angle()) < 91) ||
+	// 	(floor(barRight.rectangle.angle()) > 89 && floor(barLeft.rectangle.angle()) < 91)) {
+
+	// 	return false;
+	// }
+	// return true;
+	if((floor(barLeft.rectangle.angle()) > 89.5 && floor(barRight.rectangle.angle()) < 90.5) ||
+		(floor(barRight.rectangle.angle()) > 89.5 && floor(barLeft.rectangle.angle()) < 90.5)) {
+
 		return false;
 	}
 	return true;
@@ -65,7 +82,8 @@ inline bool isValidAngle(const Lightbar &barLeft, const Lightbar &barRight, cons
  **/
 inline bool isValidBarAngle(const Lightbar &bar)
 {
-	return 45 <= bar.rectangle.angle() && bar.rectangle.angle() <= 135;
+	return 40 <= bar.rectangle.angle() && bar.rectangle.angle() <= 140;
+
 }
 
 /**
@@ -73,14 +91,14 @@ inline bool isValidBarAngle(const Lightbar &bar)
  **/
 inline bool isValidBarCenter(const Lightbar &barLeft, const Lightbar &barRight)
 {
-	double leftYTop 	= std::min(barLeft.rectangle.points[2].y, barLeft.rectangle.points[3].y) - 20;
-	double leftYBottom  = std::max(barLeft.rectangle.points[0].y, barLeft.rectangle.points[1].y) + 20;
+	double leftYTop 	= std::min(barLeft.rectangle.points[2].y, barLeft.rectangle.points[3].y) - 25;
+	double leftYBottom  = std::max(barLeft.rectangle.points[0].y, barLeft.rectangle.points[1].y) + 25;
 
-	double rightYTop 	= std::min(barRight.rectangle.points[2].y, barRight.rectangle.points[3].y) - 20;
-	double rightYBottom  = std::max(barRight.rectangle.points[0].y, barRight.rectangle.points[1].y) + 20;
+	double rightYTop 	= std::min(barRight.rectangle.points[2].y, barRight.rectangle.points[3].y) - 25;
+	double rightYBottom  = std::max(barRight.rectangle.points[0].y, barRight.rectangle.points[1].y) + 25;
 
 	if(!(leftYTop <= barRight.rectangle.center().y && barRight.rectangle.center().y <= leftYBottom) &&
-		!(rightYTop <= barLeft.rectangle.center().y && barLeft.rectangle.center().y <= rightYBottom)) return false;
+	   !(rightYTop <= barLeft.rectangle.center().y && barLeft.rectangle.center().y <= rightYBottom)) return false;
 	return true;
 }
 /**
@@ -93,12 +111,13 @@ inline bool isValidRectRatio(const Lightbar &barLeft, const Lightbar &barRight)
 	double avgHeight = 3 * (abs((rect_left.tl() - rect_left.br()).y) + abs((rect_right.tl() - rect_right.br()).y)) / 2;
 	double horizon = abs((rect_left.tl() - rect_right.br()).x);
 	double ratio = horizon / avgHeight;
+	std::cout << "长宽比" << ratio << std::endl;
 	return (
 		(
 			ratio >= RECTS_RATIO_ARMORBOX_SMALL_LEAST &&
 			ratio <= RECTS_RATIO_ARMORBOX_SMALL_MOST) ||
 		(ratio >= RECTS_RATIO_ARMORBOX_BIG_LEAST &&
-			ratio <= RECTS_RATIO_ARMORBOX_BIG_MOST));
+		 ratio <= RECTS_RATIO_ARMORBOX_BIG_MOST));
 }
 
 /**
@@ -106,7 +125,9 @@ inline bool isValidRectRatio(const Lightbar &barLeft, const Lightbar &barRight)
  **/
 bool isValidBarLength(const Lightbar& barLeft, const Lightbar& barRight) {
 	float ratio = barLeft.length / barRight.length;
-	return 0.6 <= ratio <= 1.4;
+	std::cout << "长度比 = " << ratio << std::endl;
+	return 0.75 <= ratio && ratio <= 1.4;
+	// return 0.50 <= ratio &&ratio <=1.9;
 }
 bool isValidColor(const Lightbar& barLeft, const Lightbar& barRight) {
 	return barLeft.color == barRight.color;
@@ -118,24 +139,45 @@ bool isValidColor(const Lightbar& barLeft, const Lightbar& barRight) {
  **/
 int isLightbarPair(const Lightbar &barLeft, const Lightbar &barRight, const Sagitari& sagitari)
 {
-	// if(barLeft.length < 15 || barRight.length < 15) return -6;
-	if(!isValidBarLength(barLeft, barRight)) return -1;
-	// std::cout << "BarLength Ok" << std::endl;
-	// std::cout << "Color Ok" << std::endl;
-	if (!isValidBarAngle(barLeft) && !isValidBarAngle(barRight)) return -2;
-	// std::cout << "BarAngle Ok" << std::endl;
-	if (!isValidAngle(barLeft, barRight, sagitari)) return -3;
-	// std::cout << "Angle Ok" << std::endl;
-	if (!isValidBarCenter(barLeft, barRight)) return -5;
-	// std::cout << "BarCenter Ok" << std::endl;
-	if (!isValidRectRatio(barLeft, barRight))	return -4;
-	// std::cout << "RectRatio Ok" << std::endl;
+	if (sagitari.state == Sagitari::State::SEARCHING) {
+		std::cout << "*****************start*******************" << std::endl;
+		// if(barLeft.length < 15 || barRight.length < 15) return -6;
+		if(!isValidBarLength(barLeft, barRight)) return -1;
+		if (!isValidBarAngle(barLeft) && !isValidBarAngle(barRight)) return -2;
+		if (!isValidRectRatio(barLeft, barRight))	return -4;
+
+		if(sagitari.state == Sagitari::State::TRACKING) { 
+			return 0;
+		}
+		if (!isValidAngle(barLeft, barRight, sagitari)) return -3;
+
+		// if(!isValidBarLength(barLeft, barRight)) return -1;
+		// std::cout << "BarLength Ok" << std::endl;
+		// std::cout << "Color Ok" << std::endl;
+		// std::cout << "BarAngle Ok" << std::endl;
+		// std::cout << "Angle Ok" << std::endl;
+		if (!isValidBarCenter(barLeft, barRight)) return -5;
+		// std::cout << "BarCenter Ok" << std::endl;
+		// std::cout << "RectRatio Ok" << std::endl;
+		// if(!isValidDeviationAngle(barLeft,barRight)) return -7;
+		std::cout << "******************end******************" << std::endl;
+	}
+
+	if (sagitari.state == Sagitari::State::TRACKING) {
+		// if (!isValidBarLength(barLeft, barRight))	return -1;
+		if (!isValidBarAngle(barLeft) && !isValidBarAngle(barRight))	return -2;
+		// if (!isValidAngle(barLeft, barRight, sagitari))	   return -3;
+		// if (!isValidRectRatio(barLeft, barRight))	return -4;
+		// if (!isValidBarCenter(barLeft, barRight))	return -5;
+	}
+	
 	return 0;
 }
 /**
  * 获取装甲板类型
  **/
-static ArmorBox::Type getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg, Sagitari& sagitari)
+//static ArmorBox::Type getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg, Sagitari& sagitari)
+static int getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg, Sagitari& sagitari)
 {
 	cv::Rect screenRect(0 ,0, srcImg.cols, srcImg.rows);
 	sagitari.sendDebugImage("ContextOriginal", srcImg(box.boundingRect & screenRect));
@@ -176,31 +218,91 @@ static ArmorBox::Type getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg, Sagi
 	// sagitari.sendDebugImage("demoMat", demoMat);
 	// cv::imshow("WrapZone", demoMat);
 	warpPerspective_mat = cv::getPerspectiveTransform(box.numVertices, dstPoints);
-	// warpPerspective(warpPerspective_src, warpPerspective_dst, warpPerspective_mat, cv::Size(360, 360), INTER_NEAREST, BORDER_CONSTANT, Scalar(0)); //warpPerspective to get armorImage
+	// warpPerspective(warpPerspechronoctive_src, warpPerspective_dst, warpPerspective_mat, cv::Size(360, 360), INTER_NEAREST, BORDER_CONSTANT, Scalar(0)); //warpPerspective to get armorImage
 	warpPerspective(warpPerspective_src, warpPerspective_dst, warpPerspective_mat, box.size, INTER_NEAREST, BORDER_CONSTANT, Scalar(0)); //warpPerspective to get armorImage
 	cv::Mat imgShow;
 	// gammaCorrection(warpPerspective_dst.clone(), imgShow, 0.01);
 	cv::Mat imgGray;
 	cv::cvtColor(warpPerspective_dst.clone(), imgGray, cv::COLOR_BGR2GRAY);
-	cv::equalizeHist(imgGray, imgGray);
-	sagitari.sendDebugImage("lightningCorrect", imgGray);
+	// cv::equalizeHist(imgGray, imgGray);
+	cv::Mat imgGray_;
+	cv::equalizeHist(imgGray,imgGray);//吴佳宗调试
+	cv::threshold(imgGray,imgGray_,200,255,cv::THRESH_BINARY);
+	// cv::adaptiveThreshold(imgGray, imgGray_, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY, 7, 0.1);
+	// cv::imshow("lightningCorrect", imgGray_);
+	// cv::waitKey(1);
+	// sagitari.sendDebugImage("lightningCorrect", imgGray);
 	// cv::imshow("imgGray", imgGray);
+	//bool show_debug = true;
+	bool show_debug = false;
+	if(show_debug) {
+		namedWindow("Trackbar");
+		createTrackbar("thresh1", "Trackbar", &thresh1, 255);
+		createTrackbar("thresh2", "Trackbar", &thresh2, 255);
+		createTrackbar("blur", "Trackbar", &blur_, 500);
+		cv::waitKey(1);
+	}
 
 	cv::Mat numberPic = imgGray;
 	std::vector<cv::Mat> channels;
 	cv::split(imgGray, channels);
 	static cv::Mat morphKernel = getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
 
-	cv::blur(numberPic, numberPic, cv::Size(3, 3));
+	cv::blur(numberPic, numberPic, cv::Size(blur_/100, blur_/100));
+	//cv::GaussianBlur(numberPic, numberPic, cv::Size(3, 3),90);
 	cv::morphologyEx(numberPic, numberPic, cv::MORPH_CLOSE, morphKernel);
 	cv::morphologyEx(numberPic, numberPic, cv::MORPH_OPEN, morphKernel);
 	cv::Mat veryHighZone;
-	cv::threshold(numberPic, veryHighZone, 200, 255, cv::THRESH_BINARY);
+	cv::threshold(numberPic, veryHighZone, thresh1, 255, cv::THRESH_BINARY);
 	numberPic = numberPic - veryHighZone;
-	cv::threshold(numberPic, numberPic, 20, 255, cv::THRESH_BINARY);
-	// cv::imshow("Corrected", numberPic);
-	sagitari.sendDebugImage("Number", numberPic);
-	cv::Mat canny_output;
+	cv::threshold(numberPic, numberPic, thresh2, 255, cv::THRESH_BINARY);
+	if(show_debug) cv::imshow("Corrected", numberPic);
+	int num = 0;
+	Mat num_28;
+	resize(numberPic,num_28,Size(28,28),0,0,INTER_LINEAR);
+	cv::rectangle(num_28,cv::Point(0,0),cv::Point(5,28),cv::Scalar(255,255,255),-1);
+	cv::rectangle(num_28,cv::Point(23,0),cv::Point(28,28),cv::Scalar(255,255,255),-1);
+	//cv::imshow("num_28", num_28);
+	int black = 0;
+	for (int h = 0; h < 28; h++)
+	{
+		for (int w = 0; w < 28; w++)
+		{
+			if (numberPic.at<Vec3b>(h, w)[0] == 0 && numberPic.at<Vec3b>(h, w)[1] == 0 && numberPic.at<Vec3b>(h, w)[2] == 0)
+				black++;
+		}
+	}
+	if (black > 670)
+	{
+		cout << "invalid num" << endl;
+		//return -1;
+		// num = -1;
+	}
+	//TODO: NMIST disabled
+	num = mnist.predict(numberPic);
+	num = 1;
+	cout << "num:" << num << endl;
+	
+	//sagitari.sendDebugImage("Number", numberPic);
+	/*switch (num){
+	case 1:
+		return ArmorBox::Type::NUMBER_1;
+	case 2:
+		return ArmorBox::Type::NUMBER_2;
+	case 3:
+		return ArmorBox::Type::NUMBER_3;
+	case 4:
+		return ArmorBox::Type::NUMBER_4;
+	case 5:chrono
+		return ArmorBox::Type::NUMBER_5;
+	case 7:
+		return ArmorBox::Type::NUMBER_1;
+	default:
+		return ArmorBox::Type::UNKNOW;
+	}*/
+	//return 1;
+	return num;
+	/*cv::Mat canny_output;
 	std::vector<std::vector<cv::Point>> contours;
 	std::vector<cv::Vec4i> hierarchy;
 	cv::RNG rng(12345);
@@ -223,7 +325,7 @@ static ArmorBox::Type getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg, Sagi
 		{
 			//计算图像矩
 			cv::Moments mu = moments(contours[i], false);
-			cv::Point2f mc = Point2f(mu.m10 / mu.m00, mu.m01 / mu.m00);
+			cv::Point2f mc = Point2f(chronomu.m10 / mu.m00, mu.m01 / mu.m00);
 			// 过滤掉非中点的结果
 			if (!mc.inside(cv::Rect((360 - 30) / 2, (360 - 30) / 2, 60, 60))) continue;
 
@@ -258,7 +360,7 @@ static ArmorBox::Type getArmorBoxType(const ArmorBox &box, cv::Mat &srcImg, Sagi
 	} else {
 		return ArmorBox::Type::UNKNOW;
 	}
-	return result;
+	return result;*/
 }
 
 /**
@@ -285,6 +387,7 @@ std::vector<ArmorBoxPtr> matchArmorBoxes(cv::Mat& src, const Lightbars& lightbar
 						std::cout << "失败：灯条角度";
 					break;
 					case -3:
+						std::cout << barLeft.rectangle.angle() << " " << barRight.rectangle.angle() << std::endl;
 						std::cout << "失败：灯条角度差值";
 					break;
 					case -4:
@@ -395,16 +498,25 @@ bool isSameArmorBox(const ArmorBox &box1, const ArmorBox &box2)
 }
 std::vector<ArmorBoxPtr> Sagitari::findArmorBoxes(cv::Mat &src, const Lightbars &lightbars)
 {
-	#define WINDOW_WIDTH 1280
-	#define WINDOW_HEIGHT 720
 	static cv::Point centerPoint = cv::Point(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
+	std::vector<ArmorBoxPtr> armorBoxes = matchArmorBoxes(src, lightbars, *this);
+	auto it = armorBoxes.begin();
+	for(int i = 0; i < armorBoxes.size(); i++)
+		for(int j = i + 1; j < armorBoxes.size(); j++) {
+			if(armorBoxes[i]->lightbars.first.rect.center.x == armorBoxes[j]->lightbars.first.rect.center.x
+			|| armorBoxes[i]->lightbars.first.rect.center.x == armorBoxes[j]->lightbars.second.rect.center.x
+			|| armorBoxes[i]->lightbars.second.rect.center.x == armorBoxes[j]->lightbars.first.rect.center.x
+			|| armorBoxes[i]->lightbars.second.rect.center.x == armorBoxes[j]->lightbars.second.rect.center.x) {
+				armorBoxes[i]->deviationAngle > armorBoxes[j]->deviationAngle ? armorBoxes.erase(it + i) : armorBoxes.erase(it + j);
+			}
+	}\
 	std::vector<ArmorBoxPtr> result;
-	for (ArmorBoxPtr &box : matchArmorBoxes(src, lightbars, *this))
+	for (ArmorBoxPtr &box : armorBoxes)
 	{
 		// Color filter
 		if(box->color != this->targetColor) continue;
 		// Validate similarity.
-		box->type = getArmorBoxType(*box, src, *this);
+		box->num = getArmorBoxType(*box, src, *this);
 		// if (box->type == ArmorBox::Type::UNKNOW) continue;
 		box->updateScore();
 		result.push_back(std::move(box));

@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(sagitari)
 
-## Compile as C++14, supported in ROS Kinetic and newer
-add_compile_options(-std=c++14 -O3 -march=native)
+## Compile as C++11, supported in ROS Kinetic and newer
+add_compile_options(-std=c++14 -g -march=native)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -12,7 +12,7 @@ find_package(catkin REQUIRED COMPONENTS message_generation roscpp cv_bridge rosp
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 set(OpenCV_DIR /mnt/d/opencv/opencv-4.5.1-compiled-wsl)
-find_package(OpenCV REQUIRED)
+#find_package(OpenCV REQUIRED)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -114,6 +114,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
+  include ${catkin_INCLUDE_DIRS}
     "include"
     ${catkin_INCLUDE_DIRS}
     ${OpenCV_INCLUDE_DIRS}
@@ -147,8 +148,8 @@ add_executable(${PROJECT_NAME}_node
     "src/findArmorBox.cpp"
     "src/logging.cpp"
     "src/TrackingSession.cpp"
-    "src/anti_top.cpp"
     "src/targetTo.cpp"
+    "src/mnist.cpp"
     "src/kcf/gradientMex.cpp"
     "src/kcf/kcf.cpp"
 #    "src/device/ros.cpp"
@@ -225,3 +226,11 @@ install(TARGETS ${PROJECT_NAME}_node
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+
+# add_executable(Adjust
+#   # )
+# add_dependencies(Adjust ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# target_link_libraries(Adjust
+#   ${catkin_LIBRARIES}
+# )

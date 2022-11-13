@@ -1,3 +1,5 @@
+#ifndef H_SHAPE
+#define H_SHAPE
 #include <opencv2/core.hpp>
 
 class Rectangle {
@@ -15,3 +17,5 @@ class Rectangle {
         float height() const;
         float ratio() const;
 };
+
+#endif

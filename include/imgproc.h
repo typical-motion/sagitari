@@ -1,7 +1,10 @@
 //
 // Created by lss23 on 2021/4/3.
 //
+#ifndef H_IMGPROC
+#define H_IMGPROC
 #include <opencv2/imgproc.hpp>
+#include <Sagitari.h>
 /**
  * 绘出一个 RotatedRect 所描述的空间
  * @param rect 欲绘制的矩形
@@ -26,6 +29,10 @@ void drawPoints(const cv::Point2f points[], const cv::Mat &out, const cv::Scalar
  */
 cv::RotatedRect adjustRotatedRect(const cv::RotatedRect &rect);
 
+void drawWindowCenterLine(const cv::Mat &input );
+void drawTargetCenterLine(const cv::Mat &input ,const cv::Point2f &point);
+
+
 /**
  * 开闭运算
  */
@@ -36,3 +43,7 @@ float calcAspectRatio(const cv::RotatedRect &rect);
 double pointLength(const cv::Point& p1, const cv::Point& p2);
 
 void gammaCorrection(const cv::Mat &img, cv::Mat &res, float gamma_);
+
+double drawArmorBox(const ArmorBox& box, const cv::Mat& dst);
+
+#endif

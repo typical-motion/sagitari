@@ -5,10 +5,12 @@
 #include <cmath>
 #include <fstream>
 
-TrackingSession::TrackingSession(Sagitari& sagitari): sagitari(sagitari) {
+TrackingSession::TrackingSession(Sagitari &sagitari) : sagitari(sagitari)
+{
     reset();
 }
-void TrackingSession::reset() {
+void TrackingSession::reset()
+{
 	this->startAt = 0;
 	this->count = 0;
 	this->matX.release();
@@ -17,6 +19,9 @@ void TrackingSession::reset() {
 	this->matYaw.release();
 	this->matPitch.release();
 	this->lastSuccessfulArmorBox.reset();
+    // 数字识别
+    this->num_2_cnt = 0;
+    this->n = 0;
 }
 
 void TrackingSession::init(const EulerAngle& current) {
@@ -76,4 +81,17 @@ void TrackingSession::update(const ArmorBoxPtr& armorBox) {
 ArmorBoxPtr TrackingSession::predictArmorBox() {
 	this->predictCount++;
 	return std::move(this->lastSuccessfulArmorBox);
+}
+
+// 数字识别
+bool TrackingSession::update(const cv::Mat &src, const ArmorBox &armorBox, int num)
+{
+    this->n++;
+    if (num == 2) {
+		this->num_2_cnt++;
+    	if (n > 8 && n / num_2_cnt > 0.6)
+        	return true;
+	}
+        
+	return false;
 }
